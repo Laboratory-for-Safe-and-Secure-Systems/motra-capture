@@ -1,0 +1,36 @@
+{
+  "message_type": "CAPCON",
+  "timestamp_utc": "",
+  "setup": "",
+  "cleanup": "",
+  "CapConID": "bgnoise-perf-none-np-0001",
+  "description": "Run a testing payload for the testserver",
+  "duration": 30,
+  "payload": 
+    [{
+    "payload_type": "capture",
+    "payload_id": "cap01",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "perf stat -I 100 -j -o cap.json -a sleep 25",
+    "teardown": "",
+    "description": "default test using perf",
+    "limits": 0,
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "attack",
+    "payload_id": "bgn01",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "hyperfine --warmup 3 --min-runs 20 'find /home/las3 -iname \"*.jpg\"'",
+    "teardown": "",
+    "description": "run a testing payload in the background using hyperfine",
+    "limits": 0,
+    "timestamp_utc": ""
+  }]
+}

@@ -1,0 +1,7 @@
+__pycache__
+poetry.lock
+*.pcap
+.vscode/
+*.log
+*.txt
+*.zip

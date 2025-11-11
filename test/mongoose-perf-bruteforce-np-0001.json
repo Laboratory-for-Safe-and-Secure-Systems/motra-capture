@@ -1,0 +1,23 @@
+{
+  "message_type": "CAPCON",
+  "timestamp_utc": "",
+  "setup": "",
+  "cleanup": "",
+  "CapConID": "mongoose-perf-bruteforce-np-0001",
+  "description": "Running a bruteforce dict attack against mongoose using hydra.",
+  "duration": 30,
+  "payload": 
+    [{
+    "payload_type": "capture",
+    "payload_id": "cap01",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "perf stat -I 10 -j -o cap.json -a sleep 20",
+    "teardown": "",
+    "description": "Perform a 20s run of perf stat using the default options.",
+    "limits": 0,
+    "timestamp_utc": ""
+  }]
+}
