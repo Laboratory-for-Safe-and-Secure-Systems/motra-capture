@@ -8,7 +8,10 @@ This is an early release of our measurment and automation framework.
 Setup and installation can be done using python and the provided project files: 
 
 ```bash
-pipx install
+# setup pipx search paths:
+pipx ensurepath
+
+pipx install .
 # or using poetry
 eval $(/opt/poetry/bin/poetry env activate) 
 ```
