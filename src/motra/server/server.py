@@ -1,4 +1,3 @@
-import base64
 import subprocess
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
@@ -11,6 +10,7 @@ from motra.common.schedule import (
     execute_scheduler_template,
     generate_scheduler_template,
 )
+from motra.common.systemd import generate_logfile_from_jobid
 from motra.server.configuration import MotraServerConfig, get_server_config
 from motra.server.file_upload import handle_file_payload
 from motra.server.lifespan import lifespan
@@ -57,23 +57,10 @@ async def websocket_endpoint(
                     # collect the logs of all pending unit files (the server side payloads)
                     while config.jobs_active: 
                         job_id, _ = config.pop_from_active_jobslist()
-                        unit_name = f"motra-server-mexec@{job_id}.service"
-                        file_path = config.live_data / f"{job_id}.log"
-
-                        with open(file_path, "w") as f:
-                            # We pass the file object 'f' directly to stdout
-                            subprocess.run(
-                                ["journalctl", "-u", unit_name, "--no-pager"], 
-                                stdout=f, 
-                                stderr=subprocess.PIPE,
-                                text=True
-                            )
-
+                        generate_logfile_from_jobid(job_id, config.live_data)
 
                     # call the archiver to create a back of all server side files
                     logger.info("Generating new zip archive for previous capture run.")
-                    pending_capcon = config.get_pending_test()
-                    next_capcon = requests.parse_CAPCON(pending_capcon)
                     create_archive(
                         archive_name=f"{config.last_capcon}_server",
                         source_directory=config.live_data,
