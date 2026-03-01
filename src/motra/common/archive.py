@@ -119,6 +119,7 @@ def clean_workspace(
     # Clean up previous runs, this probably breaks with recursive dirs
     if workspace.exists():
         files_to_remove = list(workspace.glob("*"))
+        logger.info(f"Running workspace clean task, deleting left over files.")
         for file in files_to_remove:
             if verbose:
                 rich.print(f"> removing {file}")

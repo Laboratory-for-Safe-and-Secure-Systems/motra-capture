@@ -1,8 +1,10 @@
 import base64
+import subprocess
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 
 from motra.common import util
+from motra.common.archive import create_archive, clean_workspace
 from motra.common.capcon import write_payload_to_file
 from motra.common.capcon_protocol import *
 from motra.common.schedule import (
@@ -51,14 +53,36 @@ async def websocket_endpoint(
                 # when requesting a new connection, we should clean all old stuff
                 # ... we need some state
                 if config.jobs_active:
-                    job_id, job_file = config.pop_from_active_jobslist()
 
-                    # TODO do some archiving step ...
-                    # currently we are not interested in the server side data
-                    # so we ignore it; can always check the logs
+                    # collect the logs of all pending unit files (the server side payloads)
+                    while config.jobs_active: 
+                        job_id, _ = config.pop_from_active_jobslist()
+                        unit_name = f"motra-server-mexec@{job_id}.service"
+                        file_path = config.live_data / f"{job_id}.log"
 
-                    logger.info(f"removing old job {job_id}")
-                    job_file.unlink()
+                        with open(file_path, "w") as f:
+                            # We pass the file object 'f' directly to stdout
+                            subprocess.run(
+                                ["journalctl", "-u", unit_name, "--no-pager"], 
+                                stdout=f, 
+                                stderr=subprocess.PIPE,
+                                text=True
+                            )
+
+
+                    # call the archiver to create a back of all server side files
+                    logger.info("Generating new zip archive for previous capture run.")
+                    pending_capcon = config.get_pending_test()
+                    next_capcon = requests.parse_CAPCON(pending_capcon)
+                    create_archive(
+                        archive_name=f"{config.last_capcon}_server",
+                        source_directory=config.live_data,
+                        target_directory=config.archive_data,
+                        run_post_archive_checks=True,
+                    )
+
+                    # archiver cleans the current workspace (clean all logs + payload files)
+                    clean_workspace(config.live_data)
 
                 # remove all old systemd configurations
                 config.schedule_units.clear()
@@ -100,6 +124,8 @@ async def websocket_endpoint(
                     f"Server: > {response.message_type} <{response.CapConID}>",
                     extra={"data": response},
                 )
+                # we need to store the ID for the next activation, so we can create a new archive for the server
+                config.last_capcon = response.CapConID
 
                 # store the configurations locally
                 # the server needs to schedule a new run for the payloads,
@@ -149,7 +175,7 @@ async def websocket_endpoint(
                 for command in config.schedule_units:
                     execute_scheduler_template(command)
 
-                # remove all old systemd configurations for the next rus
+                # remove all old systemd configurations for the next run
                 config.schedule_units.clear()
 
                 await websocket.close()

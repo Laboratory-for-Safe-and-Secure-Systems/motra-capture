@@ -58,7 +58,7 @@ def execute_scheduler_template(command: COMMAND):
 
         if result.returncode == 0:
             logger.info("Command executed successfully.")
-            logger.info(f"  STDOUT: >> {result.stdout} <<s ")
+            logger.info(f"  STDOUT: >> {result.stdout} << ")
             if len(result.stderr) > 0:
                 logger.info(f"  STDERR: >> {result.stderr} <<  ")
         else:

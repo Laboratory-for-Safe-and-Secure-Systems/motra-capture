@@ -67,6 +67,7 @@ class MotraServerConfig:
         # payload state for the current run
         self.capture_jobs: dict[str, Path] = {}
         self.schedule_units: list[COMMAND] = list()
+        self.last_capcon = str
 
     @property
     def live_data(self):
@@ -87,7 +88,10 @@ class MotraServerConfig:
         if len(self.capture_jobs) == 0:
             return None
         return self.capture_jobs.popitem()
-
+    
+    def clear_active_jobslist(self) -> None:
+        return self.capture_jobs.clear()
+    
     def scan_tests(self) -> list[Path]:
         """
         We collect a set of preconfigured tests to run when the server starts
