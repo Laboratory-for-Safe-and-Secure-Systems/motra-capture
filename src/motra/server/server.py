@@ -130,12 +130,14 @@ async def websocket_endpoint(
                             config.add_to_active_jobslist(pid, current_job)
                             write_payload_to_file(current_job, payload=payload)
 
+                # create a list of payloads with preconfigured timers to start when sending EXECUTE
                 if active_payloads:
                     for payload in active_payloads:
                         payload_unit = generate_scheduler_template(
                             "motra-server-mexec",
                             current_id=payload.payload_id,
-                            start_time_delta="3s",
+                            start_time_delta=payload.offset,
+                            runtime_limt=payload.limits, 
                             template_unit=True,
                         )
                         config.schedule_units.append(payload_unit)

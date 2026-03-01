@@ -98,13 +98,12 @@ def serialize(model: BaseModel) -> str:
 #
 # ============================================================================ #
 
-
 class GenericPayload(BaseModel):
     """
     CapCon Payload for different measurement applications.
     """
 
-    payload_type: Literal["capture", "attack"] = Field(
+    payload_type: Literal["capture", "attack", "config", "other"] = Field(
         description="",
         default="capture",
     )
@@ -130,12 +129,27 @@ class GenericPayload(BaseModel):
         description="A textual description of the current test.",
     )
     # these might be changed to some custom type in the future....
-    limits: int = Field(
-        description="Runtime Limits in [s]",
+    limits: str = Field(
+        description="Runtime Limits in systemd time format",
+    )
+    offset: str = Field(
+        description="Activation offset from EXECUTION trigger in systemd time format",
     )
     timestamp_utc: str = Field(
         description="The ISO 8601 timestamp of when the message/object was created."
     )
+
+    # systemd time definition:
+    # usec, us, μs
+    # msec, ms
+    # seconds, second, sec, s
+    # minutes, minute, min, m
+    # hours, hour, hr, h
+    # days, day, d
+    # weeks, week, w
+    # months, month, M (defined as 30.44 days)
+    # years, year, y (defined as 365.25 days)
+
 
 
 # ============================================================================ #
@@ -304,8 +318,9 @@ class CAPCON(BaseModel):
         " This is required to embed all available data and setup instructions"
         " into the final test data archive"
     )
-    duration: int = Field(
-        description="Time frame for the client to start the next measurement run.",
+    duration: str = Field(
+        description="Time frame for the client to start the next measurement run. "
+        "Uses systemd time format for setting up a new timer. "
     )
 
     # this needs to be a payload !

@@ -280,6 +280,7 @@ class MeasurementClient(StateMachine):
             "motra-client",
             current_id=parsed_data.CapConID,
             start_time_delta=parsed_data.duration,
+            runtime_limt="infinity", # disable timeout
             template_unit=True,
         )
 
@@ -290,7 +291,8 @@ class MeasurementClient(StateMachine):
                 payload_unit = generate_scheduler_template(
                     "motra-client-mexec",
                     current_id=payload.payload_id,
-                    start_time_delta="3s",
+                    start_time_delta=payload.offset,
+                    runtime_limt=payload.limits, 
                     template_unit=True,
                 )
                 self.schedule_units.append(payload_unit)

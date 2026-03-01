@@ -5,7 +5,7 @@
   "cleanup": "",
   "CapConID": "tcpdump-perf-none-np-0001",
   "description": "run a tcpdump payload on the server side and a measurement on the client side",
-  "duration": 30,
+  "duration": "30s",
   "payload": 
     [{
     "payload_type": "capture",
@@ -17,7 +17,8 @@
     "command": "perf stat -I 100 -j -o cap.json -a sleep 25",
     "teardown": "",
     "description": "default test using perf",
-    "limits": 2,
+    "limits": "27s",
+    "offset": "500ms", 
     "timestamp_utc": ""
   },
   {
@@ -30,7 +31,8 @@
     "command": "timeout 10 sudo tcpdump -i enxa0cec88b1a4e -w tcpdump-perf-none-np-0001.pcap",
     "teardown": "",
     "description": "capture setup using motra for the attacker side ",
-    "limits": 4,
+    "limits": "20s",
+    "offset": "2s200ms",
     "timestamp_utc": ""
   },
   {
@@ -43,7 +45,8 @@
     "command": "hyperfine --warmup 3 --min-runs 20 'find /home/las3 -iname \"*.jpg\"'",
     "teardown": "",
     "description": "run a testing payload in the background using hyperfine",
-    "limits": 0,
+    "limits": "30s",
+    "offset": "1s",
     "timestamp_utc": ""
   }]
 }

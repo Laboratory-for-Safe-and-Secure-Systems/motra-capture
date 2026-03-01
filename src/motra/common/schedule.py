@@ -17,6 +17,7 @@ def generate_scheduler_template(
     unit_type: MOTRA_UNITS,
     current_id: str,
     start_time_delta: str,
+    runtime_limt: str,
     default_timer_accuracy: str = "10ms",
     template_unit: bool = True,
 ) -> COMMAND:
@@ -29,6 +30,7 @@ def generate_scheduler_template(
     command = f"""sudo 
                     systemd-run 
                     --on-active={start_time_delta} 
+                    --property=TimeoutStartSec={runtime_limt}
                     --unit {unit_type}{template}{current_id}.service 
                     --timer-property AccuracySec={default_timer_accuracy}"""
 

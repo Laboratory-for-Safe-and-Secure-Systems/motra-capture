@@ -42,7 +42,7 @@ def parse_CAPCON(pending_test: Path) -> CAPCON:
             command="",
             CapConID="",
             description="",
-            duration=0,
+            duration="",
         )
 
     logger.debug(
