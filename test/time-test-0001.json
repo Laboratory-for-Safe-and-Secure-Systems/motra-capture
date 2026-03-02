@@ -1,0 +1,165 @@
+{
+  "message_type": "CAPCON",
+  "timestamp_utc": "",
+  "setup": "",
+  "cleanup": "",
+  "CapConID": "time-test-0001",
+  "description": "run a sequence of tests on the server and client side to determine if timing works as intended.",
+  "duration": "30s",
+  "payload": 
+    [{
+    "payload_type": "other",
+    "payload_id": "cap01",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "1. test",
+    "limits": "20s",
+    "offset": "500ms", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "cap02",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "2. test",
+    "limits": "20s",
+    "offset": "1s", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "cap03",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "3. test",
+    "limits": "20s",
+    "offset": "1s500ms", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "cap04",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "4. test",
+    "limits": "20s",
+    "offset": "2s", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "att01",
+    "target": [
+      "server"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "1. test",
+    "limits": "20s",
+    "offset": "200ms", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "att02",
+    "target": [
+      "server"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "2. test",
+    "limits": "20s",
+    "offset": "400ms", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "att03",
+    "target": [
+      "server"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "3. test",
+    "limits": "20s",
+    "offset": "600ms", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "att04",
+    "target": [
+      "server"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "4. test",
+    "limits": "20s",
+    "offset": "800ms", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "att05",
+    "target": [
+      "server"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "5. test",
+    "limits": "20s",
+    "offset": "1s", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "att06",
+    "target": [
+      "server"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "6. test",
+    "limits": "20s",
+    "offset": "1s200ms", 
+    "timestamp_utc": ""
+  },
+  {
+    "payload_type": "other",
+    "payload_id": "att07",
+    "target": [
+      "server"
+    ],
+    "setup": "",
+    "command": "date --utc +%Y-%m-%dT%H:%M:%S.%3N-%Z",
+    "teardown": "",
+    "description": "7. test",
+    "limits": "20s",
+    "offset": "1s400ms", 
+    "timestamp_utc": ""
+  }
+  ]
+}
