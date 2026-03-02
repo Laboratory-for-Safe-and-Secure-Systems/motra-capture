@@ -59,7 +59,7 @@ async def websocket_endpoint(
                     # collect the logs of all pending unit files (the server side payloads)
                     while config.jobs_active: 
                         job_id, _ = config.pop_from_active_jobslist()
-                        generate_logfile_from_jobid(job_id, config.live_data)
+                        generate_logfile_from_jobid(job_id, "server", config.live_data)
 
                     # call the archiver to create a back of all server side files
                     logger.info("Generating new zip archive for previous capture run.")

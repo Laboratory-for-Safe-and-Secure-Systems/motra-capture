@@ -27,6 +27,7 @@ from motra.common.schedule import (
 from motra.client import requests
 from motra.client.client_connection import ClientConnection
 from motra.client.configuration import MotraClientConfig
+from motra.common.systemd import generate_logfile_from_jobid
 
 
 logger = logging.getLogger(__name__)
@@ -143,6 +144,12 @@ class MeasurementClient(StateMachine):
         # before uploading the files, we need to parse the current test:
         last_capture = load_capcon_from_file(self.workspace["live"])
 
+        # create logfiles from all active payloads inside the client workspace
+        if last_capture:
+            for payload in last_capture.payload:
+                if self.config.ClientId in payload.target:
+                    generate_logfile_from_jobid(payload.payload_id, "client", self.workspace["live"])
+
         # Archive the last test, if one is available
         if last_capture is not None:
             logger.info("Generating new zip archive for previous capture run.")
@@ -207,7 +214,7 @@ class MeasurementClient(StateMachine):
         # staging to done
         if parsed_data.file_name:
             source = self.workspace["staging"] / parsed_data.file_name
-            dest = self.workspace["archived"] / parsed_data.file_name
+            dest = self.workspace["archive"] / parsed_data.file_name
             util.move_file(source, dest)
 
         # ... if there are more files to upload

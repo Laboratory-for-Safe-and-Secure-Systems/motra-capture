@@ -100,7 +100,7 @@ def load_json_files_into_list(
         except json.JSONDecodeError:
             # Handle files with invalid JSON content
             logger.error(
-                f"Failed to parse JSON. Invalid format.",
+                f"Failed to parse JSON. Invalid format. {file_path.name}",
                 exc_info=True,
             )
             return Response(status=Status.ERROR)

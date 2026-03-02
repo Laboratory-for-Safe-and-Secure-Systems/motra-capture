@@ -31,7 +31,6 @@ def client(
     """
 
     client_defaultConsoleLogger(loglevel)
-
     # we check the current environment for an active workspace
     # if we got a valid/explicit workspace dir, we use this as an override
     path, config = open_existing_workspace(client_id)
@@ -60,7 +59,7 @@ def client(
     clientWorkspace = {
         "live": config.data_storage / "live",
         "staging": config.data_storage / "staging",
-        "archived": config.data_storage / "archived",
+        "archive": config.data_storage / "archive",
     }
 
     create_entity_workspace(clientWorkspace)

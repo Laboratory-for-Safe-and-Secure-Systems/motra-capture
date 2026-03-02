@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 def generate_logfile_from_jobid(
     job_id: str,
+    role: str,
     workspace: Path,
 ):
     """
@@ -14,7 +15,7 @@ def generate_logfile_from_jobid(
 
     Calls journalctl -u <...@job_id> to create a file based on the job id.
     """
-    unit_name = f"motra-server-mexec@{job_id}.service"
+    unit_name = f"motra-{role}-mexec@{job_id}.service"
     file_path = workspace / f"{job_id}.log"
 
     with open(file_path, "w") as f:
