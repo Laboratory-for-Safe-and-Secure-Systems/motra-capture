@@ -2,6 +2,8 @@ import subprocess
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 
+from datetime import datetime, UTC
+
 from motra.common import util
 from motra.common.archive import create_archive, clean_workspace
 from motra.common.capcon import write_payload_to_file
@@ -123,6 +125,9 @@ async def websocket_endpoint(
 
                     for payload in response.payload:
                         if "server" in payload.target:
+                            # update the current timestamp for the payloads.
+                            payload.timestamp_utc = str(datetime.now(UTC))
+
                             # add the current id to our joblist
                             pid = payload.payload_id
                             active_payloads.append(payload)

@@ -1,6 +1,7 @@
 import time
 import json
 from statemachine import StateMachine, State
+from datetime import datetime, UTC
 
 from motra.common import util
 from motra.common.capcon import (
@@ -257,6 +258,7 @@ class MeasurementClient(StateMachine):
         # we should be able to put this as a parameter into the statemachine somehow
         self.current_captureConfiguration = parsed_data.CapConID
         logger.info(f"Received {parsed_data.CapConID}...")
+        parsed_data.timestamp_utc = str(datetime.now(UTC))
 
         # store the current capture configuration to disk for the next run
         write_capcon_to_file(
@@ -271,6 +273,7 @@ class MeasurementClient(StateMachine):
         if parsed_data.payload:
             for payload in parsed_data.payload:
                 if client_id in payload.target:
+                    payload.timestamp_utc = str(datetime.now(UTC))
                     active_payloads.append(payload)
                     pid = payload.payload_id
                     current_job = self.workspace["live"] / f"{pid}.json"
