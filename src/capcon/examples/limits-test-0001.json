@@ -1,0 +1,26 @@
+{
+  "message_type": "CAPCON",
+  "timestamp_utc": "",
+  "setup": "",
+  "cleanup": "",
+  "CapConID": "limit-test-0001",
+  "description": "hit test limits by timeout",
+  "duration": "5s",
+  "payload": 
+    [
+    {
+    "payload_type": "other",
+    "payload_id": "log01",
+    "target": [
+      "client"
+    ],
+    "setup": "",
+    "command": "timeout 20 sleep 60",
+    "teardown": "",
+    "description": "try to reach timeout limit for systemd",
+    "limits": "1s",
+    "offset": "200ms", 
+    "timestamp_utc": ""
+  }
+  ]
+}
