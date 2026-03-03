@@ -103,7 +103,7 @@ class GenericPayload(BaseModel):
     CapCon Payload for different measurement applications.
     """
 
-    payload_type: Literal["capture", "attack", "config", "other"] = Field(
+    payload_type: Literal["capture", "attack", "config", "logs", "other"] = Field(
         description="",
         default="capture",
     )

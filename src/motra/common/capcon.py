@@ -30,14 +30,17 @@ def load_capcon_from_file(workspace: Path) -> Optional[CAPCON]:
 def write_capcon_to_file(
     workspace: Path,
     current_test: CAPCON,
+    capcon_name: str = "capcon.json",
+    create_ID_file: bool = True,
 ):
-    capcon_path = workspace / f"capcon.json"
+    capcon_path = workspace / f"{capcon_name}"
     if capcon_path.is_file():
         raise RuntimeError("Found existing configuration, not overriding.")
 
     # create a file ID so we have some indicator later on in the archive
-    current_job = workspace / f"{current_test.CapConID}"
-    current_job.touch()
+    if create_ID_file:
+        current_job = workspace / f"{current_test.CapConID}"
+        current_job.touch()
 
     capcon_path.write_text(current_test.model_dump_json())
 
