@@ -1,4 +1,10 @@
-from capcon.payload import genPayload, genCommand, GenericPayload
+from capcon.payload import genPayload, GenericPayload
+
+
+def genCommand(options: list[str], runtime: str) -> str:
+    opts = ",".join(options)
+    return f"perf stat -e {opts} -I 100 -j -o cap.json -a sleep {runtime}"
+
 
 default_options = [
     "branch-misses",

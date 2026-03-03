@@ -50,8 +50,3 @@ def format_payload(
         load_count += 1
 
     return payloads
-
-
-def genCommand(options: list[str], runtime: str) -> str:
-    opts = ",".join(options)
-    return f"perf stat -e {opts} -I 100 -j -o cap.json -a sleep {runtime}"
