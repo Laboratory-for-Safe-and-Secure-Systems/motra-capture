@@ -1,4 +1,4 @@
-from capcon.payload import genPayload, genCommand
+from capcon.payload import genPayload, genCommand, GenericPayload
 
 default_options = [
     "branch-misses",
@@ -131,7 +131,7 @@ memory_options = [
 # perf stat -d -I 100 -a sleep 10 # detailed stats for general stuff...
 # perf stat -e
 
-perf_stat_payloads = []
+perf_stat_payloads: list[GenericPayload] = []
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(default_options, 60),

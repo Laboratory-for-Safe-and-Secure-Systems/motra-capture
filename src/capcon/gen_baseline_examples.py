@@ -109,19 +109,15 @@ for dyn_payloads in dynamic_payloads:
     for i in range(0, repetition):
 
         nextCapConName = f"baseline_perf_measurements_{id_count:04}"
-        # this is to identify all ids in the future
-        hasher = hashlib.sha256()
-        hasher.update(nextCapConName.encode("utf-8"))
-        payloadHashId = hasher.hexdigest()[:8]
 
         # create a copy of static payload list and populate the names
-        payload: list[GenericPayload] = static_payloads[:]
+        payload: list[GenericPayload] = [item.model_copy() for item in static_payloads]
         for load in payload:
             load.command = load.command.format(capconname=nextCapConName)
 
         # create a list of payloads and update payload IDs
-        payload.append(dyn_payloads)
-        payload = format_payload(payload, payloadHashId)
+        payload.append(dyn_payloads.model_copy())
+        payload = format_payload(payload, nextCapConName)
 
         # we run the default configs for about one minute
         # this way we can inject the config samples easily
@@ -138,10 +134,15 @@ for dyn_payloads in dynamic_payloads:
 
         # every 20 iterations add a config reset
         if id_count % 20 == 0:
+            confLoad: list[GenericPayload] = [
+                item.model_copy() for item in config_payloads
+            ]
+            nextCapConName = nextCapConName + "_config"
+            confLoad = format_payload(confLoad, nextCapConName)
             configCon = CAPCON(
-                CapConID=nextCapConName + "config",
+                CapConID=nextCapConName,
                 duration="65s",
-                payload=config_payloads[:],
+                payload=confLoad,
                 description="config reset for docker",
                 timestamp_utc="",
             )
