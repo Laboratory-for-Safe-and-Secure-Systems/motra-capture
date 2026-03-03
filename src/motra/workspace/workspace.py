@@ -25,6 +25,12 @@ def get_default_workspace_path(preferred_path: Path) -> Path:
     xdg_runtime_dir = None
     # systemd does not work this way with runtime_dir, since this was an sandboxing option
 
+    custom_workspace = os.environ.get("MOTRA_WORKSPACE")
+    if custom_workspace:
+        target_workdir = Path(custom_workspace).absolute()
+        logger.info(f"Selected workspace: {target_workdir}")
+        return target_workdir
+
     xdg_var = os.environ.get("XDG_RUNTIME_DIR")
     if xdg_var:
         xdg_runtime_dir = Path(xdg_var)
