@@ -141,7 +141,7 @@ perf_stat_payloads: list[GenericPayload] = []
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(default_options, 60),
-        description="perf stat 1",
+        description="perf stat default",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -151,7 +151,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(exception_options, 60),
-        description="perf stat 2",
+        description="perf stat exception 1",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -162,7 +162,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(unususal_exception_options[0:6], 60),
-        description="perf stat 2",
+        description="perf stat exception 2",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -172,7 +172,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(unususal_exception_options[6:], 60),
-        description="perf stat 2",
+        description="perf stat exception 3",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -183,7 +183,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(branch_options, 60),
-        description="perf stat 3",
+        description="perf stat branch",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -193,7 +193,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(memory_options, 60),
-        description="perf stat 3",
+        description="perf stat memory",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -204,7 +204,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(instruction_options[0:6], 60),
-        description="perf stat 3",
+        description="perf stat instruction 1",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -214,7 +214,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(instruction_options[6:12], 60),
-        description="perf stat 3",
+        description="perf stat instruction 2",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -224,7 +224,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(instruction_options[12:18], 60),
-        description="perf stat 3",
+        description="perf stat instruction 3",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -234,7 +234,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(instruction_options[18:], 60),
-        description="perf stat 3",
+        description="perf stat instruction 4",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -245,7 +245,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(base_cache_options[0:3], 60),
-        description="perf stat 4",
+        description="perf stat base cache 1",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -255,7 +255,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(base_cache_options[3:6], 60),
-        description="perf stat 5",
+        description="perf stat base cache 2",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -265,7 +265,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(base_cache_options[6:9], 60),
-        description="perf stat 6",
+        description="perf stat base cache 3",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -275,7 +275,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(base_cache_options[9:], 60),
-        description="perf stat 6",
+        description="perf stat base cache 4",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -286,7 +286,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(cache_options[0:6], 60),
-        description="perf stat 6",
+        description="perf stat cache 1",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -296,7 +296,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(cache_options[6:12], 60),
-        description="perf stat 6",
+        description="perf stat cache 2",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -306,7 +306,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(cache_options[12:18], 60),
-        description="perf stat 6",
+        description="perf stat cache 3",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -316,7 +316,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(cache_options[18:24], 60),
-        description="perf stat 6",
+        description="perf stat cache 4",
         limits="65s",
         offset="500ms",
         payload_type="capture",
@@ -326,7 +326,7 @@ perf_stat_payloads.append(
 perf_stat_payloads.append(
     genPayload(
         command=genCommand(cache_options[24:], 60),
-        description="perf stat 6",
+        description="perf stat cache 5",
         limits="65s",
         offset="500ms",
         payload_type="capture",
