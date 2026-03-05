@@ -67,12 +67,13 @@ nmap_payloads.append(
 
 # 1400 secs for a single ip
 # TODO: we might need to run these tests isolated
+# this test is still broken (also the systemd limit does not seem to be working in this instance)
 # this runtime will create config issues with the OPC UA timeout, unless we reconfigure the servers
 nmap_payloads.append(
     genPayload(
         command="timeout 1400 nmap -n -sU -Pn -e end0 -oA capcon {target_ip}",
         description="UDP scan with default options",
-        limits="25s",
+        limits="1400s",
         offset="500ms",
         payload_type="attack",
         target=["server"],

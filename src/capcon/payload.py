@@ -10,9 +10,7 @@ def genPayload(
     limits: str,
     offset: str,
     payload_type: str = "other",
-    target: list[str] = [
-        "client",
-    ],
+    target: list[str] = ["client"],
 ) -> GenericPayload:
 
     return GenericPayload(
