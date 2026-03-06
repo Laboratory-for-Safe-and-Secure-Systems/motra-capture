@@ -1,3 +1,5 @@
+from itertools import product
+
 from capcon.payload import (
     format_payloadIds_with_digest,
     genPayload,
@@ -22,14 +24,14 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 
 # hydra -l admin -p admin 10.10.100.83 -s 8000 http-get
-# hydra -L seclists/dmiessler-SecLists/Usernames/Names/names.txt  -P seclists/dmiessler-SecLists/Passwords/Common-Credentials/top-passwords-shortlist.txt 10.10.100.83 ssh
+# hydra -L seclists/dmiessler-SecLists/Usernames/Names/names.txt  -P seclists/dmiessler-SecLists/Passwords/Common-Credentials/top-passwords-shortlist.txt 10.10.100.83 ssh,
 
 bforce_payloads: list[GenericPayload] = []
 bforce_payloads.append(
     genPayload(
         command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 22 ssh ",
         description="perform a bruteforce attack against local SSH service",
-        limits="300s",
+        limits="305s",
         offset="500ms",
         payload_type="attack",
         target=["server"],
@@ -41,7 +43,7 @@ bforce_payloads.append(
     genPayload(
         command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 5432 postgres ",
         description="perform a bruteforce attack against local testing database",
-        limits="300s",
+        limits="305s",
         offset="200ms",
         payload_type="attack",
         target=["server"],
@@ -91,26 +93,46 @@ capcon_output_folder.resolve().mkdir(exist_ok=True)
 log.info(capcon_output_folder)
 
 
+# in case we have multiple ips or combinations, we need to create permutations using itertools
+tartget_ip = "10.10.10.103"
+
+# Password Lists:
+password_lists = [
+    "/opt/SecLists/rockyou/rockyou.txt",
+    "dmiessler-SecLists/Passwords/Default-Credentials/default-passwords.txt",
+    "dmiessler-SecLists/Passwords/Common-Credentials/Pwdb_top-10000.txt",
+    "dmiessler-SecLists/Passwords/Common-Credentials/2025-199_most_used_passwords.txt",
+]
+
+username_lists = [
+    "dmiessler-SecLists/Usernames/cirt-default-usernames.txt",
+    "dmiessler-SecLists/Usernames/top-usernames-shortlist.txt",
+]
+
+
+dynamic_payloads = []
+for perm_payload, username_l, password_l in product(
+    bforce_payloads, username_lists, password_lists
+):
+
+    # create a deep copy of the pydantic model
+    load = perm_payload.model_copy()
+    load.command = load.command.format(
+        username_list=username_l,
+        password_list=password_l,
+        target_ip=tartget_ip,
+    )
+    dynamic_payloads.append(load)
+
 # we need some repetition for the payloads
 # Generate each test X times (for starter with identical configuration)
 # we can add some level of variation in the future...
 repetition = 1
-dynamic_payloads = bforce_payloads[:]
 capture_configurations: list[CAPCON] = []
 id_count = 1
 
 
-# in case we have multiple ips or combinations, we need to create permutations using itertools
-tartget_ip = "10.10.10.103"
-# TODO: these are tbd, either install them directly or reuse the container setup
-name_lists = "seclists/dmiessler-SecLists/Usernames/Names/names.txt"
-pw_lists = "seclists/dmiessler-SecLists/Passwords/Common-Credentials/top-passwords-shortlist.txt "
-
-
-# for item_a, item_b, item_c in product(server_type, dest_ip, testing_functions):
-#  ...
-
-for dyn_payloads in dynamic_payloads:
+for dyn_payload in dynamic_payloads:
 
     # run N measurements to get a good baseline
     for _ in range(0, repetition):
@@ -119,12 +141,12 @@ for dyn_payloads in dynamic_payloads:
 
         # create a copy of static payload list and populate the names
         payload = [item.model_copy() for item in static_payloads]
-        payload.append(dyn_payloads.model_copy())
+        payload.append(dyn_payload.model_copy())
 
         # the dyn. models are required to set the upper runtime limit
         # add 1s as margin, in case some payload uses a subsecond interval
         # this will just round up the runtime for the tcpdump process to the next full second
-        upper_runtime = int(parse_systemd_timespan(dyn_payloads.limits))
+        upper_runtime = int(parse_systemd_timespan(dyn_payload.limits))
         upper_runtime += 1
 
         # update all the runtime parameters (names, runtime in s)
@@ -132,9 +154,6 @@ for dyn_payloads in dynamic_payloads:
             load.command = load.command.format(
                 capconname=nextCapConName,
                 tcpdump_runtime=str(upper_runtime),  # timeout ...
-                target_ip=tartget_ip,
-                username_list=name_lists,
-                password_list=pw_lists,
             )
             load.limits = load.limits.format(
                 tcpdump_runtime=str(upper_runtime + 1),  # actual limit
@@ -148,7 +167,7 @@ for dyn_payloads in dynamic_payloads:
             CapConID=nextCapConName,
             duration=str(upper_runtime + 5) + "s",
             payload=payload,
-            description="recon measurement",
+            description=f"bruteforce for {nextCapConName}",
             timestamp_utc="",
         )
 
