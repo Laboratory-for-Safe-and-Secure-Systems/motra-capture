@@ -30,7 +30,7 @@ def generate_scheduler_template(
     command = f"""sudo 
                     systemd-run 
                     --on-active={start_time_delta} 
-                    --property=TimeoutStartSec={runtime_limt}
+                    --property=RuntimeMaxSec={runtime_limt}
                     --unit {unit_type}{template}{current_id}.service 
                     --timer-property AccuracySec={default_timer_accuracy}"""
 

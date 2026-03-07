@@ -131,7 +131,7 @@ def motra_mexec_unit(
     StandardError=journal
     WorkingDirectory={working_dir}
     EnvironmentFile={environment_file}
-    Type=oneshot
+    Type=exec
     ExecStart={python_executable} -m motra.cli.cli mexec %i
     """
 
