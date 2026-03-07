@@ -1,13 +1,17 @@
-from capcon.payload import genPayload, GenericPayload, format_payloadIds_with_digest
 import logging
 from pathlib import Path
 
 from rich import print as rprint
 
 from capcon.log_payload import logging_payloads
-from capcon.systemd_time import parse_systemd_timespan
+from capcon.util.systemd_time import parse_systemd_timespan
 from motra.common.capcon import write_capcon_to_file
 from motra.common.capcon_protocol import CAPCON
+from capcon.util.payload import (
+    genPayload,
+    format_payloadIds_with_digest,
+)
+from motra.common.capcon_protocol import GenericPayload
 
 # an example for ettercap skripting
 # sudo ettercap -T -s 's(60)slqq' -M arp  -i end0 /10.10.10.102// /10.10.10.103//
@@ -79,7 +83,7 @@ config_payload = genPayload(
 # the network capture process is also a static payload.
 # we try to generate pcaps for the baseline measurements and for the attacks
 capture_payload = genPayload(
-    command="timeout {tcpdump_runtime} sudo tcpdump -i enxa0cec88b1a4e -w {capconname}.pcap",
+    command="sudo tcpdump -i enxa0cec88b1a4e -w {capconname}.pcap",
     target=["server"],
     description="archive current network interaction",
     limits="{tcpdump_runtime}s",
@@ -157,8 +161,6 @@ for dyn_payloads in dynamic_payloads:
         )
         mitm_configurations.append(configCon)
 
-
-# print(len(capture_configurations))
 
 # generate the base configuration
 for capcon in mitm_configurations:

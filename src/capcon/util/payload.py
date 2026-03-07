@@ -1,6 +1,4 @@
 import hashlib
-
-from capcon.systemd_time import parse_systemd_timespan
 from motra.common.capcon_protocol import GenericPayload
 
 
@@ -52,13 +50,3 @@ def format_payloadIds_with_digest(
         load_count += 1
 
     return payloads
-
-
-def get_max_runtime_limit(
-    payloads: list[GenericPayload],
-) -> GenericPayload:
-    """
-    parse a list of payloads and retrieve the payload with upper runtime limit
-    """
-    max_runtime = max(payloads, key=lambda load: parse_systemd_timespan(load.limits))
-    return max_runtime

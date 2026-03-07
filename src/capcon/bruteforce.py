@@ -1,17 +1,14 @@
 from itertools import product
-
-from capcon.payload import (
-    format_payloadIds_with_digest,
-    genPayload,
-    GenericPayload,
-    get_max_runtime_limit,
-)
-from capcon.systemd_time import format_systemd_timespan, parse_systemd_timespan
-
 from rich import print as rprint
 from pathlib import Path
 import logging
 
+from capcon.util.payload import (
+    format_payloadIds_with_digest,
+    genPayload,
+)
+
+from capcon.util.systemd_time import parse_systemd_timespan
 from motra.common.capcon import write_capcon_to_file
 from motra.common.capcon_protocol import CAPCON, GenericPayload
 from capcon.log_payload import logging_payloads
@@ -29,7 +26,7 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 bforce_payloads: list[GenericPayload] = []
 bforce_payloads.append(
     genPayload(
-        command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 22 ssh -o hydra.txt ",
+        command="hydra -L {username_list} -P {password_list} {target_ip} -s 22 ssh -o hydra.txt ",
         description="perform a bruteforce attack against local SSH service",
         limits="305s",
         offset="500ms",
@@ -41,7 +38,7 @@ bforce_payloads.append(
 # we need to setup a basic postgres instance for testing
 bforce_payloads.append(
     genPayload(
-        command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 5432 postgres -o hydra.txt ",
+        command="hydra -L {username_list} -P {password_list} {target_ip} -s 5432 postgres -o hydra.txt ",
         description="perform a bruteforce attack against local testing database",
         limits="305s",
         offset="200ms",
@@ -58,7 +55,7 @@ bforce_payloads.append(
 static_payloads: list[GenericPayload] = []
 static_payloads.append(
     genPayload(
-        command="timeout {tcpdump_runtime}s sudo tcpdump -i enxa0cec88b1a4e -w {capconname}.pcap",
+        command="sudo tcpdump -i enxa0cec88b1a4e -w {capconname}.pcap",
         target=["server"],
         description="archive current network interaction",
         limits="{tcpdump_runtime}s",

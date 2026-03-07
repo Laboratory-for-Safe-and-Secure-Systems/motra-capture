@@ -1,13 +1,11 @@
-from capcon.payload import genPayload, GenericPayload
-
+from pathlib import Path
 from itertools import product
 import logging
 
 from rich import print as rprint
 
-from pathlib import Path
-from capcon.payload import format_payloadIds_with_digest, genPayload
-
+from capcon.util.payload import genPayload, GenericPayload
+from capcon.util.payload import format_payloadIds_with_digest, genPayload
 from motra.common.capcon import write_capcon_to_file
 from motra.common.capcon_protocol import CAPCON
 from capcon.log_payload import logging_payloads
@@ -168,10 +166,10 @@ for dyn_payloads in dynamic_payloads:
 
 # generate the base configuration
 for capcon in opc_configurations:
-    rprint(capcon)
-    # write_capcon_to_file(
-    #     capcon_output_folder,
-    #     capcon,
-    #     capcon_name=capcon.CapConID + ".json",
-    #     create_ID_file=False,
-    # )
+    # rprint(capcon)
+    write_capcon_to_file(
+        capcon_output_folder,
+        capcon,
+        capcon_name=capcon.CapConID + ".json",
+        create_ID_file=False,
+    )

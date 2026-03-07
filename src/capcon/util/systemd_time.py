@@ -1,4 +1,5 @@
 import re
+from motra.common.capcon_protocol import GenericPayload
 
 SYSTEMD_TIME_UNITS = {
     "usec": 0.000001,
@@ -81,3 +82,13 @@ def format_systemd_timespan(seconds: float) -> str:
             parts.append(f"{count}{unit_name}")
 
     return " ".join(parts)
+
+
+def get_max_runtime_limit(
+    payloads: list[GenericPayload],
+) -> GenericPayload:
+    """
+    parse a list of payloads and retrieve the payload with upper runtime limit
+    """
+    max_runtime = max(payloads, key=lambda load: parse_systemd_timespan(load.limits))
+    return max_runtime

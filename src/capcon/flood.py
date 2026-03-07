@@ -1,14 +1,12 @@
 import logging
-
-from pathlib import Path
-from capcon.payload import format_payloadIds_with_digest, genPayload
-from capcon.perf_stat import perf_stat_payloads
-
 from rich import print as rprint
+from pathlib import Path
 
+from capcon.util.payload import format_payloadIds_with_digest, genPayload
 from motra.common.capcon import write_capcon_to_file
 from motra.common.capcon_protocol import CAPCON, GenericPayload
 from capcon.log_payload import logging_payloads
+
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")

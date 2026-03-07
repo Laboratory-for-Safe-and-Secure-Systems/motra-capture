@@ -1,7 +1,7 @@
-from capcon.payload import genPayload, GenericPayload
+from capcon.util.payload import genPayload, GenericPayload
 
 
-logging_payloads = []
+logging_payloads: list[GenericPayload] = []
 logging_payloads.append(
     genPayload(
         command="docker ps",

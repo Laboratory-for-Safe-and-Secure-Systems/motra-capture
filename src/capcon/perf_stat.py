@@ -1,4 +1,4 @@
-from capcon.payload import genPayload, GenericPayload
+from capcon.util.payload import genPayload, GenericPayload
 
 
 def genCommand(options: list[str], runtime: str) -> str:
