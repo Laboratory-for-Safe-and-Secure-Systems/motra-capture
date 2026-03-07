@@ -6,7 +6,7 @@ import logging
 from rich import print as rprint
 
 from pathlib import Path
-from capcon.payload import format_payload, genPayload
+from capcon.payload import format_payloadIds_with_digest, genPayload
 
 from motra.common.capcon import write_capcon_to_file
 from motra.common.capcon_protocol import CAPCON
@@ -14,9 +14,17 @@ from capcon.log_payload import logging_payloads
 
 # general usage /motra/remote-exploit/claroty-framework$ python3 main.py dotnetstd 172.17.0.2 4840 / sanity
 
+# we still need to configure venv for this to work properly
+# Build the current fork for OPC framework from claroty with:
+# docker build -t opc .
+#
+# then run the payloads:
+# docker run -it --rm opc dotnetstd 10.10.10.103 4840 / sanity
+# /motra/remote-exploit/claroty-framework$ venv/bin/python3 main.py dotnetstd 10.10.10.103 4840 / sanity
+
 testing_functions = [
     "sanity",
-    "certificate_inf_chain_loop",
+    # "certificate_inf_chain_loop",
     "chunk_flood",
     "open_multiple_secure_channels",
     "unlimited_persistent_subscriptions",
@@ -35,28 +43,29 @@ dest_ip = ["10.10.10.103"]
 
 
 opc_generic_payload = genPayload(
-    command="timeout 200 python3 main.py {server_type} {target_ip} 4840 /KRITIS3M {function}",
-    description="claroty OPC for {server_type}",
-    limits="200s",
+    command="timeout 200 docker run -it --rm opc {server_type} {target_ip} 4840 /KRITIS3M {function}",
+    description="OPC server payload for {server_type}",
+    limits="205s",
     offset="500ms",
+    target=["server"],
     payload_type="attack",
 )
 
 opc_payloads: list[GenericPayload] = []
 
-for item_a, item_b, item_c in product(server_type, dest_ip, testing_functions):
+for server_t, destination, function in product(server_type, dest_ip, testing_functions):
 
     # update format strings
     opc_load = opc_generic_payload.model_copy()
     opc_load.command = opc_load.command.format(
-        server_type=item_a,
-        target_ip=item_b,
-        function=item_c,
+        server_type=server_t,
+        target_ip=destination,
+        function=function,
     )
     opc_load.description = opc_load.description.format(
-        server_type=item_a,
-        target_ip=item_b,
-        function=item_c,
+        server_type=server_t,
+        target_ip=destination,
+        function=function,
     )
     opc_payloads.append(opc_load)  # these should be copies ready for formatting
 
@@ -106,7 +115,7 @@ static_payloads.extend(logging_payloads)
 # we need some repetition for the payloads
 # Generate each test X times (for starter with identical configuration)
 # we can add some level of variation in the future...
-repetition = 5
+repetition = 1
 dynamic_payloads = opc_payloads[:]
 opc_configurations: list[CAPCON] = []
 id_count = 1
@@ -114,7 +123,7 @@ id_count = 1
 for dyn_payloads in dynamic_payloads:
 
     # run N measurements to get a good baseline
-    for i in range(0, repetition):
+    for _ in range(0, repetition):
 
         nextCapConName = f"opc_tampering_measurements_{id_count:04}"
 
@@ -125,7 +134,7 @@ for dyn_payloads in dynamic_payloads:
 
         # create a list of payloads and update payload IDs
         payload.append(dyn_payloads.model_copy())
-        payload = format_payload(payload, nextCapConName)
+        payload = format_payloadIds_with_digest(payload, nextCapConName)
 
         # we run the default configs for about one minute
         # this way we can inject the config samples easily
@@ -146,7 +155,7 @@ for dyn_payloads in dynamic_payloads:
                 item.model_copy() for item in config_payloads
             ]
             nextCapConName = nextCapConName + "_config"
-            confLoad = format_payload(confLoad, nextCapConName)
+            confLoad = format_payloadIds_with_digest(confLoad, nextCapConName)
             configCon = CAPCON(
                 CapConID=nextCapConName,
                 duration="65s",
@@ -157,14 +166,12 @@ for dyn_payloads in dynamic_payloads:
             opc_configurations.append(configCon)
 
 
-# print(len(capture_configurations))
-
 # generate the base configuration
 for capcon in opc_configurations:
-    # rprint(capcon)
-    write_capcon_to_file(
-        capcon_output_folder,
-        capcon,
-        capcon_name=capcon.CapConID + ".json",
-        create_ID_file=False,
-    )
+    rprint(capcon)
+    # write_capcon_to_file(
+    #     capcon_output_folder,
+    #     capcon,
+    #     capcon_name=capcon.CapConID + ".json",
+    #     create_ID_file=False,
+    # )
