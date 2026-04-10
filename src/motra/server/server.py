@@ -6,7 +6,7 @@ from datetime import datetime, UTC
 
 from motra.common import util
 from motra.common.archive import create_archive, clean_workspace
-from motra.common.capcon import write_payload_to_file
+from motra.common.capcon import write_capcon_to_file, write_payload_to_file
 from motra.common.capcon_protocol import *
 from motra.common.schedule import (
     execute_scheduler_template,
@@ -57,7 +57,7 @@ async def websocket_endpoint(
                 if config.jobs_active:
 
                     # collect the logs of all pending unit files (the server side payloads)
-                    while config.jobs_active: 
+                    while config.jobs_active:
                         job_id, _ = config.pop_from_active_jobslist()
                         generate_logfile_from_jobid(job_id, "server", config.live_data)
 
@@ -113,8 +113,17 @@ async def websocket_endpoint(
                     f"Server: > {response.message_type} <{response.CapConID}>",
                     extra={"data": response},
                 )
-                # we need to store the ID for the next activation, so we can create a new archive for the server
+
+                # we need to store the ID and the base configuration for the next activation,
+                # so we can create a new archive for the server.
                 config.last_capcon = response.CapConID
+
+                if response.CapConID is not "":
+                    response.timestamp_utc = str(datetime.now(UTC))
+                    write_capcon_to_file(
+                        workspace=config.live_data,
+                        current_test=response,
+                    )
 
                 # store the configurations locally
                 # the server needs to schedule a new run for the payloads,
@@ -142,7 +151,7 @@ async def websocket_endpoint(
                             "motra-server-mexec",
                             current_id=payload.payload_id,
                             start_time_delta=payload.offset,
-                            runtime_limt=payload.limits, 
+                            runtime_limt=payload.limits,
                             template_unit=True,
                         )
                         config.schedule_units.append(payload_unit)
