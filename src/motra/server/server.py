@@ -1,4 +1,3 @@
-import subprocess
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 
@@ -54,7 +53,8 @@ async def websocket_endpoint(
 
                 # when requesting a new connection, we should clean all old stuff
                 # ... we need some state
-                if config.jobs_active:
+                workspace_contents = list(config.live_workspace.iterdir())
+                if workspace_contents:
 
                     # collect the logs of all pending unit files (the server side payloads)
                     while config.jobs_active:
@@ -70,8 +70,10 @@ async def websocket_endpoint(
                         run_post_archive_checks=True,
                     )
 
-                    # archiver cleans the current workspace (clean all logs + payload files)
-                    clean_workspace(config.live_data)
+                # archiver cleans the current workspace (clean metadata, logs or payload files)
+                # configuration units can in some cases create files inside the workspace, without any
+                # additional payloads. In this case we need to clean the config to keep the server active
+                clean_workspace(config.live_data)
 
                 # remove all old systemd configurations
                 config.schedule_units.clear()
