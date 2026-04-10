@@ -15,7 +15,7 @@ logging_payloads.append(
 
 logging_payloads.append(
     genPayload(
-        command="docker container logs plc-logic --tail 10",
+        command="docker container logs -t plc-logic --tail 10",
         description="check client plc-logic health",
         limits="1s",
         offset="200ms",
@@ -25,7 +25,7 @@ logging_payloads.append(
 
 logging_payloads.append(
     genPayload(
-        command="docker container logs plc-server --tail 10",
+        command="docker container logs -t plc-server --tail 10",
         description="check client plc-server health",
         limits="1s",
         offset="200ms",
@@ -35,7 +35,7 @@ logging_payloads.append(
 
 logging_payloads.append(
     genPayload(
-        command="docker container logs plc-historian --tail 10",
+        command="docker container logs -t plc-historian --tail 10",
         description="check client plc-historian health",
         limits="1s",
         offset="200ms",
@@ -45,7 +45,7 @@ logging_payloads.append(
 
 logging_payloads.append(
     genPayload(
-        command="journalctl -n 20 --no-pager",
+        command="journalctl -o short-precise -n 20 --no-pager",
         description="Get the latest server logs, in case of failure",
         limits="1s",
         offset="{end_of_test_logs}s",
