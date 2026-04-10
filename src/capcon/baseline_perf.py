@@ -4,6 +4,7 @@ from pathlib import Path
 
 from capcon.util.payload import format_payloadIds_with_digest, genPayload
 from capcon.perf_stat import perf_stat_payloads
+from capcon.util.systemd_time import parse_systemd_timespan
 from motra.common.capcon import write_capcon_to_file
 from motra.common.capcon_protocol import CAPCON, GenericPayload
 from capcon.log_payload import logging_payloads
@@ -13,7 +14,7 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 # #############################################################################################
 
-capcon_output_folder = Path(".") / "tmp-gen / baseline"
+capcon_output_folder = Path(".") / "tmp-gen" / "baseline"
 capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
 log.info(capcon_output_folder)
 
@@ -36,12 +37,12 @@ config_payloads.append(
 static_payloads: list[GenericPayload] = []
 static_payloads.append(
     genPayload(
-        command="timeout 60 sudo tcpdump -i enxa0cec88b1a4e -w {capconname}.pcap",
+        command="timeout {tcpdump_runtime} sudo tcpdump -i enxa0cec88b1a4e -w {capconname}.pcap",
         target=[
             "server",
         ],
         description="archive current network interaction",
-        limits="65s",
+        limits="{tcpdump_runtime}s",
         offset="500ms",
         payload_type="capture",
     )
@@ -62,7 +63,7 @@ dynamic_payloads = perf_stat_payloads[:]
 capture_configurations: list[CAPCON] = []
 id_count = 1
 
-for dyn_payloads in dynamic_payloads:
+for dyn_payload in dynamic_payloads:
 
     # run N measurements to get a good baseline
     for i in range(0, repetition):
@@ -71,18 +72,35 @@ for dyn_payloads in dynamic_payloads:
 
         # create a copy of static payload list and populate the names
         payload: list[GenericPayload] = [item.model_copy() for item in static_payloads]
-        for load in payload:
-            load.command = load.command.format(capconname=nextCapConName)
+
+        # the dyn. models are required to set the upper runtime limit
+        # add 1s as margin, in case some payload uses a subsecond interval
+        # this will just round up the runtime for the tcpdump process to the next full second
+        upper_runtime = int(parse_systemd_timespan(dyn_payload.limits))
+        upper_runtime += 1
 
         # create a list of payloads and update payload IDs
-        payload.append(dyn_payloads.model_copy())
+        payload.append(dyn_payload.model_copy())
         payload = format_payloadIds_with_digest(payload, nextCapConName)
+
+        # update dynamic parameters
+        for load in payload:
+            load.command = load.command.format(
+                capconname=nextCapConName,
+                tcpdump_runtime=str(upper_runtime),  # timeout ...
+            )
+            load.limits = load.limits.format(
+                tcpdump_runtime=str(upper_runtime + 1),  # actual limit
+            )
+            load.offset = load.offset.format(
+                end_of_test_logs=str(upper_runtime + 1),
+            )
 
         # we run the default configs for about one minute
         # this way we can inject the config samples easily
         newCon = CAPCON(
             CapConID=nextCapConName,
-            duration="65s",
+            duration="310s",
             payload=payload,
             description="baseline measurement",
             timestamp_utc="",
@@ -91,8 +109,8 @@ for dyn_payloads in dynamic_payloads:
         capture_configurations.append(newCon)
         id_count += 1
 
-        # every 20 iterations add a config reset
-        if id_count % 20 == 0:
+        # every 5 iterations add a config reset
+        if id_count % 5 == 0:
             confLoad: list[GenericPayload] = [
                 item.model_copy() for item in config_payloads
             ]
@@ -100,7 +118,7 @@ for dyn_payloads in dynamic_payloads:
             confLoad = format_payloadIds_with_digest(confLoad, nextCapConName)
             configCon = CAPCON(
                 CapConID=nextCapConName,
-                duration="65s",
+                duration="310s",
                 payload=confLoad,
                 description="config reset for docker",
                 timestamp_utc="",
