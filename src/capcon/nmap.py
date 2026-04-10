@@ -12,13 +12,14 @@ from motra.common.capcon import write_capcon_to_file
 from motra.common.capcon_protocol import CAPCON, GenericPayload
 from capcon.log_payload import logging_payloads
 
+from capcon.perf_stat import default_options, genCommand
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 # #############################################################################################
 
-capcon_output_folder = Path(".") / "tmp-gen / recon"
+capcon_output_folder = Path(".") / "tmp-gen" / "recon"
 capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
 log.info(capcon_output_folder)
 
@@ -29,7 +30,7 @@ nmap_payloads: list[GenericPayload] = []
 # default takes around 16s for runtime
 nmap_payloads.append(
     genPayload(
-        command="nmap -n -A -e end0 -oA capcon {target_ip}",
+        command="nmap -n -A -e end0 -oG capcon{target_ip}",
         description="default settings for nmap with default timeout",
         limits="25s",
         offset="500ms",
@@ -47,7 +48,7 @@ nmap_payloads.append(
 # for i in range(0, 5):
 #     nmap_payloads.append(
 #         genPayload(
-#             command=f"nmap -n -A -T{i} -oA capcon \u007btarget_ip\u007d",
+#             command=f"nmap -n -A -T{i} -oG capcon\u007btarget_ip\u007d",
 #             description="nmap 1",
 #             limits="65s",
 #             offset="500ms",
@@ -58,7 +59,7 @@ nmap_payloads.append(
 # 405s for a single IP
 nmap_payloads.append(
     genPayload(
-        command=f"nmap -n -A -T2 -e end0 -oA capcon \u007btarget_ip\u007d",
+        command=f"nmap -n -A -T2 -e end0 -oG capcon\u007btarget_ip\u007d",
         description="stealthy scan using default values but -T2",
         limits="505s",
         offset="500ms",
@@ -73,7 +74,7 @@ nmap_payloads.append(
 # this runtime will create config issues with the OPC UA timeout, unless we reconfigure the servers
 nmap_payloads.append(
     genPayload(
-        command="nmap -n -sU -Pn -e end0 -oA capcon {target_ip}",
+        command="nmap -n -sU -Pn -e end0 -oG capcon{target_ip}",
         description="UDP scan with default options",
         limits="1400s",
         offset="500ms",
@@ -85,7 +86,7 @@ nmap_payloads.append(
 # idle scan does not work in our current setup
 # nmap_payloads.append(
 #     genPayload(
-#         command="nmap -n  -sI -Pn -oA capcon {target_ip}",
+#         command="nmap -n  -sI -Pn -oG capcon{target_ip}",
 #         description="nmap 1",
 #         limits="65s",
 #         offset="500ms",
@@ -96,7 +97,7 @@ nmap_payloads.append(
 # 1.8 secs for single IP
 nmap_payloads.append(
     genPayload(
-        command="nmap -n -sN -Pn -e end0 -oA capcon {target_ip}",
+        command="nmap -n -sN -Pn -e end0 -oG capcon{target_ip}",
         description="TCP Null scan with default options",
         limits="6s",
         offset="500ms",
@@ -108,7 +109,7 @@ nmap_payloads.append(
 # 1.8 secs for single IP
 nmap_payloads.append(
     genPayload(
-        command="nmap -n -sF -Pn -e end0 -oA capcon {target_ip}",
+        command="nmap -n -sF -Pn -e end0 -oG capcon{target_ip}",
         description="TCP FIN scan with default options",
         limits="6s",
         offset="500ms",
@@ -121,7 +122,7 @@ nmap_payloads.append(
 # 1.8 secs for single IP
 nmap_payloads.append(
     genPayload(
-        command="nmap -n -sX -Pn -e end0 -oA capcon {target_ip}",
+        command="nmap -n -sX -Pn -e end0 -oG capcon{target_ip}",
         description="TCP XMAS scan with default options",
         limits="6s",
         offset="500ms",
@@ -133,7 +134,7 @@ nmap_payloads.append(
 # about 0.5 secs for a single IP on T3
 nmap_payloads.append(
     genPayload(
-        command="nmap -n -PA -e end0 -oA capcon {target_ip}",
+        command="nmap -n -PA -e end0 -oG capcon{target_ip}",
         description="TCP ACK Ping scan with default options",
         limits="3s",
         offset="500ms",
@@ -146,7 +147,7 @@ nmap_payloads.append(
 # about 4 secs for a single ip
 nmap_payloads.append(
     genPayload(
-        command="nmap -sX -O -e end0 -sV -oA capcon {target_ip}",
+        command="nmap -sX -O -e end0 -sV -oG capcon{target_ip}",
         description="testing with OS detection",
         limits="6s",
         offset="500ms",
@@ -158,7 +159,7 @@ nmap_payloads.append(
 # default script option takes about 4s for single ip
 nmap_payloads.append(
     genPayload(
-        command="nmap -sC -O -e end0 -sV -oA capcon {target_ip}",
+        command="nmap -sC -O -e end0 -sV -oG capcon{target_ip}",
         description="default scripting options with -sC ",
         limits="6s",
         offset="500ms",
@@ -170,7 +171,7 @@ nmap_payloads.append(
 # about 55s for a single IP
 nmap_payloads.append(
     genPayload(
-        command='nmap --script "default or safe" -e end0 -O -sV -oA capcon {target_ip}',
+        command='nmap --script "default or safe" -e end0 -O -sV -oG capcon{target_ip}',
         description="nmap scripts: default or safe",
         limits="65s",
         offset="500ms",
@@ -182,7 +183,7 @@ nmap_payloads.append(
 # about 26.5 secs for a single IP
 nmap_payloads.append(
     genPayload(
-        command='nmap --script "vuln" -e end0 -O -sV -oA capcon {target_ip}',
+        command='nmap --script "vuln" -e end0 -O -sV -oG capcon{target_ip}',
         description="nmap scripts: vuln scan",
         limits="35s",
         offset="500ms",
@@ -194,7 +195,7 @@ nmap_payloads.append(
 # 26s for a single IP
 nmap_payloads.append(
     genPayload(
-        command='nmap --script "dos" -e end0 -O -sV -oA capcon {target_ip}',
+        command='nmap --script "dos" -e end0 -O -sV -oG capcon{target_ip}',
         description="nmap scripts: dos scan",
         limits="35s",
         offset="500ms",
@@ -207,7 +208,7 @@ nmap_payloads.append(
 # changes to allow for scanning in multiple iterations
 nmap_payloads.append(
     genPayload(
-        command="nmap -T5 -p 22 --script ssh-brute -oA capcon --script-args userdb=users.lst,passdb=pass.lst --script-args ssh-brute.timeout=4s {target_ip}",
+        command="nmap -T5 -p 22 --script ssh-brute -oG capcon--script-args userdb=users.lst,passdb=pass.lst --script-args ssh-brute.timeout=4s {target_ip}",
         description="nmap 1",
         limits="305s",
         offset="500ms",
@@ -228,6 +229,17 @@ static_payloads.append(
         description="archive current network interaction",
         limits="{tcpdump_runtime}s",
         offset="400ms",
+        payload_type="capture",
+    )
+)
+
+static_payloads.append(
+    genPayload(
+        command=genCommand(default_options, "{perf_runtime}"),
+        target=["client"],
+        description="perf stat default",
+        limits="{perf_runtime}s",
+        offset="500ms",
         payload_type="capture",
     )
 )
@@ -263,7 +275,7 @@ id_count = 1
 
 
 # in case we have multiple ips or combinations, we need to create permutations using itertools
-tartget_ip = "10.10.100.80"
+tartget_ip = "10.10.10.103"
 
 
 for dyn_payloads in dynamic_payloads:
@@ -289,9 +301,11 @@ for dyn_payloads in dynamic_payloads:
                 capconname=nextCapConName,
                 tcpdump_runtime=str(upper_runtime),  # timeout ...
                 target_ip=tartget_ip,
+                perf_runtime=str(upper_runtime),
             )
             load.limits = load.limits.format(
                 tcpdump_runtime=str(upper_runtime + 1),  # actual limit
+                perf_runtime=str(upper_runtime + 1),
             )
 
         payload = format_payloadIds_with_digest(payload, nextCapConName)
