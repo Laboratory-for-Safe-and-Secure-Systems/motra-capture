@@ -20,6 +20,11 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 # #############################################################################################
 
 
+capcon_output_folder = Path(".") / "tmp-gen / bruteforce"
+capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
+log.info(capcon_output_folder)
+
+
 # hydra -l admin -p admin 10.10.100.83 -s 8000 http-get
 # hydra -L seclists/dmiessler-SecLists/Usernames/Names/names.txt  -P seclists/dmiessler-SecLists/Passwords/Common-Credentials/top-passwords-shortlist.txt 10.10.100.83 ssh,
 
@@ -83,11 +88,6 @@ static_payloads.extend(logging_payloads)
 
 # rprint(static_payloads)
 # print(payload.model_dump_json(indent=2))
-
-
-capcon_output_folder = Path(".") / "tmp-gen"
-capcon_output_folder.resolve().mkdir(exist_ok=True)
-log.info(capcon_output_folder)
 
 
 # in case we have multiple ips or combinations, we need to create permutations using itertools

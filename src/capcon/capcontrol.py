@@ -37,8 +37,8 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 # #############################################################################################
 
-capcon_output_folder = Path(".") / "tmp-gen"
-capcon_output_folder.resolve().mkdir(exist_ok=True)
+capcon_output_folder = Path(".") / "tmp-gen / c2"
+capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
 log.info(capcon_output_folder)
 
 
@@ -58,12 +58,46 @@ c2_payloads.append(
 # we install the payloads into /usr/local/bin
 # therefore all required payloads should be system callable
 # ARM64_SESSION, ARM64_BEACON
+# c2_payloads.append(
+#     genPayload(
+#         command="/opt/sliver/ARM64_SESSION",
+#         target=["client"],
+#         description="Start a client session for testing",
+#         limits="30s",
+#         offset="5s",
+#         payload_type="attack",
+#     )
+# )
+
+# runuser is required, bc motra-server shedules as root user
+# c2_payloads.append(
+#     genPayload(
+#         command="runuser -l motra -c 'run_session_info'",
+#         target=["server"],
+#         description="test the session info command",
+#         limits="5s",
+#         offset="12s",
+#         payload_type="attack",
+#     )
+# )
+
+# c2_payloads.append(
+#     genPayload(
+#         command="runuser -l motra -c 'run_session_ipa'",
+#         target=["server"],
+#         description="test the session payload command",
+#         limits="5s",
+#         offset="14s",
+#         payload_type="attack",
+#     )
+# )
+
 c2_payloads.append(
     genPayload(
-        command="/opt/sliver/ARM64_SESSION",
+        command="/opt/sliver/ARM64_BEACON",
         target=["client"],
         description="Start a client session for testing",
-        limits="30s",
+        limits="200s",
         offset="5s",
         payload_type="attack",
     )
@@ -72,7 +106,7 @@ c2_payloads.append(
 # runuser is required, bc motra-server shedules as root user
 c2_payloads.append(
     genPayload(
-        command="runuser -l motra -c 'run_session_info'",
+        command="runuser -l motra -c 'run_beacon_info'",
         target=["server"],
         description="test the session info command",
         limits="5s",
@@ -83,7 +117,7 @@ c2_payloads.append(
 
 c2_payloads.append(
     genPayload(
-        command="runuser -l motra -c 'run_session_ipa'",
+        command="runuser -l motra -c 'run_beacon_payload'",
         target=["server"],
         description="test the session payload command",
         limits="5s",
@@ -92,16 +126,16 @@ c2_payloads.append(
     )
 )
 
-# c2_payloads.append(
-#     genPayload(
-#         command="ARM64_SESSION",
-#         target=["client"],
-#         description="run a sliver payload",
-#         limits="200s",
-#         offset="5s",
-#         payload_type="attack",
-#     )
-# )
+c2_payloads.append(
+    genPayload(
+        command="runuser -l motra -c 'kill_active_beacon'",
+        target=["server"],
+        description="test the session payload command",
+        limits="10s",
+        offset="170s",
+        payload_type="attack",
+    )
+)
 
 
 c2_payloads.append(
@@ -110,7 +144,7 @@ c2_payloads.append(
         target=["server"],
         description="setup the sliver server to accept client connections and sessions",
         limits="5s",
-        offset="25s",
+        offset="188s",
         payload_type="attack",
     )
 )
@@ -181,7 +215,7 @@ for _ in range(0, repetition):
     # this will just round up the runtime for the tcpdump process to the next full second
     # upper_runtime = int(parse_systemd_timespan(dynamic_payloads.limits))
     # upper_runtime += 1
-    upper_runtime = 45
+    upper_runtime = 220
 
     # update all the runtime parameters (names, runtime in s)
     for load in payload:

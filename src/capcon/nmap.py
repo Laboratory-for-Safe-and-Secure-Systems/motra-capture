@@ -18,6 +18,10 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 # #############################################################################################
 
+capcon_output_folder = Path(".") / "tmp-gen / recon"
+capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
+log.info(capcon_output_folder)
+
 
 nmap_payloads: list[GenericPayload] = []
 
@@ -247,11 +251,6 @@ static_payloads.extend(logging_payloads)
 
 # rprint(static_payloads)
 # print(payload.model_dump_json(indent=2))
-
-
-capcon_output_folder = Path(".") / "tmp-gen"
-capcon_output_folder.resolve().mkdir(exist_ok=True)
-log.info(capcon_output_folder)
 
 
 # we need some repetition for the payloads

@@ -29,8 +29,8 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 # #############################################################################################
 
-capcon_output_folder = Path(".") / "tmp-gen"
-capcon_output_folder.resolve().mkdir(exist_ok=True)
+capcon_output_folder = Path(".") / "tmp-gen / mitm"
+capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
 log.info(capcon_output_folder)
 
 mitm_payloads: list[GenericPayload] = []
