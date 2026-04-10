@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 # docker build -t opc .
 #
 # then run the payloads:
-# docker run -it --rm opc dotnetstd 10.10.10.103 4840 / sanity
+# docker run --rm opc dotnetstd 10.10.10.103 4840 / sanity
 # /motra/remote-exploit/claroty-framework$ venv/bin/python3 main.py dotnetstd 10.10.10.103 4840 / sanity
 
 
@@ -50,7 +50,7 @@ dest_ip = ["10.10.10.103"]
 
 
 opc_generic_payload = genPayload(
-    command="timeout 200 docker run -it --rm opc {server_type} {target_ip} 4840 /KRITIS3M {function}",
+    command="timeout 200 docker run --rm opc {server_type} {target_ip} 4840 /KRITIS3M {function}",
     description="OPC server payload for {server_type}",
     limits="205s",
     offset="500ms",
