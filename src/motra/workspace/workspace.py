@@ -1,5 +1,6 @@
 import os
 import logging
+import pwd
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel
@@ -15,11 +16,15 @@ def get_default_workspace_path(preferred_path: Path) -> Path:
 
     Checked Defaults:
     1) Read MOTRA_WORKSPACE from the environment \n
-    2) check XDG_RUNTIME_DIR for a user session \n
-    3) check /run/user/userid/motra/ for a default fallback
+    2) Preferred Path, if provided
+    3) /home/<user>/.local/share/motra as a default
+
+    Using XDG_RUNTIME_DIR does not work for multiple reasons:
+    1. we need to setup lingering to not wipe any measurement data in case of reboot or logout
+    2. since /run/user/<uid> is a tmpfs, there are very strict memory limits. 800MB of data can be wasted quickly
 
     returns:
-        Path | None: The workspace, as found in the default order
+        Path: The workspace, as found in the default order (raises on error)
     """
     target_workdir = None
     xdg_runtime_dir = None
@@ -31,32 +36,22 @@ def get_default_workspace_path(preferred_path: Path) -> Path:
         logger.info(f"Selected workspace: {target_workdir}")
         return target_workdir
 
-    xdg_var = os.environ.get("XDG_RUNTIME_DIR")
-    if xdg_var:
-        xdg_runtime_dir = Path(xdg_var)
-
     if preferred_path:
         # if path is relative, create a sanitized path here
         logger.info(f"Using provided Path: {Path(preferred_path).absolute()}")
         target_workdir = Path(preferred_path).absolute()
 
-    elif xdg_runtime_dir:
-        logger.info(f"Using XDG user session default: {xdg_runtime_dir}")
-        target_workdir = xdg_runtime_dir / "motra"
-
     else:
         # we need to fall back to a sane default to init the application
-        # /run/users/<uid>/motra
-        userid = os.getuid()
-        fallback_location = Path(f"/run/user/{userid}/motra")
-        target_workdir = fallback_location
+        user = pwd.getpwuid(os.getuid())[0]
+        target_workdir = Path(f"/home/{user}/.local/share/motra").absolute()
 
     logger.info(f"Selected workspace: {target_workdir}")
 
     return target_workdir
 
 
-def get_initialized_default_workspace() -> Path:
+def get_initialized_default_workspace() -> Optional[Path]:
     """
     Uses the default search order to find an initialized workspace
 
@@ -136,15 +131,8 @@ def get_validated_workspace_configuration(
         return None
 
 
-def init_entity_datastorage(path: Path):
-    """
-    Setup a datastorage folder for a new entity.
-    """
-    path.mkdir(parents=True, exist_ok=True)
-
-
 def init_entity_workspace_dir(
-    preferred_path: str | None,
+    preferred_path: Optional[str],
     entity: str,
 ) -> tuple[Path, FileConfiguration | None]:
     """
@@ -174,12 +162,13 @@ def init_entity_workspace_dir(
     # if we dont have existing data, create the root for later use and exit
     else:
         logger.debug("No existing configuration present, creating empyt workspace")
-        path.mkdir(parents=True, exist_ok=True)
+        create_entity_workspace({entity: path})
+        # path.mkdir(parents=True, exist_ok=True)
 
     return (path, configuration)
 
 
-def open_existing_workspace(entity: str) -> tuple[Path, FileConfiguration | None]:
+def open_existing_workspace(entity: str) -> Optional[tuple[Path, FileConfiguration]]:
     """
     Gets an existing, valid workspace + configuration.
 
@@ -199,6 +188,6 @@ def open_existing_workspace(entity: str) -> tuple[Path, FileConfiguration | None
     return (workspace, configuration)
 
 
-def create_entity_workspace(workspaces: dict[str, Path]):
+def create_entity_workspace(workspaces: dict[str, Path]) -> None:
     for workspace in workspaces.values():
-        workspace.mkdir(exist_ok=True)
+        workspace.mkdir(exist_ok=True, parents=True)

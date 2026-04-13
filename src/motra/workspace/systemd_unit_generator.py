@@ -1,8 +1,41 @@
 import tempfile
 
-from motra.common.exec_environment import run_privileged_command
+from pathlib import Path
+
+from motra.common.exec_environment import (
+    get_current_python_path,
+    run_privileged_command,
+)
 
 from motra.common.literals import INSTALLABLE_UNITS
+
+
+def reload_systemd():
+    command = ["systemctl", "daemon-reload"]
+    run_privileged_command(command)
+
+
+def parse_systemd_config(
+    user: str,
+    group: str,
+    environment_file: Path,
+    entity_datastorage: Path,
+    live_workdir: Path,
+    command: str,
+) -> tuple:
+
+    python_exec = get_current_python_path() / "python3"
+    exec_command = f"{python_exec} {command}"
+
+    return {
+        "user": user,
+        "group": group,
+        "environment": environment_file,
+        "live_workdir": live_workdir,
+        "entity_storage": entity_datastorage,
+        "command": exec_command,
+        "python": python_exec,
+    }
 
 
 def write_unit_to_disk(
@@ -18,17 +51,20 @@ def write_unit_to_disk(
         run_privileged_command(command)
 
 
-def motra_capture_unit(
-    user: str,
-    group: str,
-    command: str,
-    environment_file: str,
-    working_dir: str,
-) -> str:
+def motra_capture_unit(config: tuple) -> str:
     """
     Returns a string representation for a motra capture unit.
     Do not remove %i from the template, since this will be filled by systemd.
     """
+
+    user = config["user"]
+    group = config["group"]
+
+    # TODO do we need capture workspace or storage workspace?
+    working_dir = config["live_workdir"]
+
+    environment_file = config["env_path"]
+    command = config["command"]
 
     template_string = f"""
     [Unit]
@@ -46,17 +82,17 @@ def motra_capture_unit(
     return template_string
 
 
-def motra_client_unit(
-    user: str,
-    group: str,
-    command: str,
-    environment_file: str,
-    working_dir: str,
-) -> str:
+def motra_client_unit(config: tuple) -> str:
     """
     Returns a string representation for a motra client unit.
     Do not remove %i from the template, since this will be filled by systemd.
     """
+
+    user = config["user"]
+    group = config["group"]
+    working_dir = config["entity_storage"]
+    environment_file = config["environment"]
+    command = config["command"]
 
     template_string = f"""
     [Unit]
@@ -76,17 +112,17 @@ def motra_client_unit(
     return template_string
 
 
-def motra_server_unit(
-    user: str,
-    group: str,
-    command: str,
-    environment_file: str,
-    working_dir: str,
-) -> str:
+def motra_server_unit(config: tuple) -> str:
     """
     Returns a string representation for a motra server unit.
     Do not remove %i from the template, since this will be filled by systemd.
     """
+
+    user = config["user"]
+    group = config["group"]
+    working_dir = config["entity_storage"]
+    environment_file = config["environment"]
+    command = config["command"]
 
     template_string = f"""
     [Unit]
@@ -106,17 +142,17 @@ def motra_server_unit(
     return template_string
 
 
-def motra_mexec_unit(
-    user: str,
-    group: str,
-    python_executable: str,
-    environment_file: str,
-    working_dir: str,
-):
+def motra_mexec_unit(config: tuple):
     """
     Returns a string representation for a motra mexec unit.
     Do not remove %i from the template, since this will be filled by systemd.
     """
+
+    user = config["user"]
+    group = config["group"]
+    working_dir = config["live_workdir"]
+    environment_file = config["environment"]
+    python_executable = config["python"]
 
     template_string = f"""
     [Unit]
