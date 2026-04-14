@@ -144,6 +144,14 @@ def client(
     appconfig.dump(default_workspace_path)
     appconfig.dumpenv()
 
+    # update the local workspace paths
+    client_workspace = {
+        "live": clientconfig.live_workspace,
+        "archive": clientconfig.archive_workspace,
+        "stage": clientconfig.staging_workspace,
+    }
+    create_entity_workspace(client_workspace)
+
     sysd_config = parse_systemd_config(
         user=os.getuid(),
         group=os.getgid(),
