@@ -120,7 +120,7 @@ async def websocket_endpoint(
                 # so we can create a new archive for the server.
                 config.last_capcon = response.CapConID
 
-                if response.CapConID is not "":
+                if response.CapConID != "":
                     response.timestamp_utc = str(datetime.now(UTC))
                     write_capcon_to_file(
                         workspace=config.live_data,
