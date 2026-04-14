@@ -1,7 +1,11 @@
 import time
 import json
-from statemachine import StateMachine, State
 from datetime import datetime, UTC
+
+from statemachine import StateMachine, State
+
+from motra.client import requests
+from motra.client.client_connection import ClientConnection
 
 from motra.common import util
 from motra.common.capcon import (
@@ -10,8 +14,7 @@ from motra.common.capcon import (
     write_payload_to_file,
 )
 from motra.common.capcon_protocol import *
-from motra.common.response_types import Status
-
+from motra.common.response_types import Response, Status
 from motra.common.archive import (
     clean_workspace,
     create_archive,
@@ -20,20 +23,13 @@ from motra.common.schedule import (
     COMMAND,
     execute_scheduler_template,
     generate_scheduler_template,
-    schedule_client_process,
-    schedule_capture_process,
 )
 
-from motra.client import requests
-from motra.client.client_connection import ClientConnection
-from motra.client.configuration import MotraClientConfig
 from motra.common.systemd import generate_logfile_from_jobid
+from motra.workspace.workspace_configuration import FileConfiguration
 
 
 logger = logging.getLogger(__name__)
-
-# TODO: this needs to move!
-test_command = ""
 
 
 class MeasurementClient(StateMachine):
@@ -59,11 +55,11 @@ class MeasurementClient(StateMachine):
 
     def __init__(
         self,
-        clientConfig: MotraClientConfig,
+        entity: str,
         clientConnection: ClientConnection,
         workspace: dict,
     ):
-        self.config = clientConfig
+        self.entity_ID = entity
         self.connection = clientConnection
         self.pending_files = list()
         self.current_captureConfiguration: str
@@ -86,7 +82,7 @@ class MeasurementClient(StateMachine):
     @disconnected.enter
     async def client_idle(self):
 
-        wait_time = self.config.backoff()
+        wait_time = self.connection.backoff()
         logger.info(
             f"Entered DISCONNECTED state. Will try to connect in {wait_time}s.",
         )
@@ -120,15 +116,7 @@ class MeasurementClient(StateMachine):
 
         logger.info("Entered CONNECTING state. Waiting for SERVER_HELLO ...")
         data = await conman.receive()
-        if data.status != Status.SUCCESS:
-            exit(1)
-
-        unsanitized_data = json.loads(data.payload)  # needs derserialize before use
-        parsed_data = util.validate(model=SERVER_HELLO, data=unsanitized_data)
-
-        # we failed to load the json stream into memory
-        if parsed_data is None:
-            exit(1)
+        parsed_data = parse_raw_data(data, SERVER_HELLO)
 
         logger.debug(
             "Received SERVER_HELLO from Server",
@@ -147,8 +135,10 @@ class MeasurementClient(StateMachine):
         # create logfiles from all active payloads inside the client workspace
         if last_capture:
             for payload in last_capture.payload:
-                if self.config.ClientId in payload.target:
-                    generate_logfile_from_jobid(payload.payload_id, "client", self.workspace["live"])
+                if self.entity_ID in payload.target:
+                    generate_logfile_from_jobid(
+                        payload.payload_id, "client", self.workspace["live"]
+                    )
 
         # Archive the last test, if one is available
         if last_capture is not None:
@@ -203,11 +193,7 @@ class MeasurementClient(StateMachine):
         # we should be safe to remove the archive from our storage
         # or just mark the archive to be removed for now
         data = await conman.receive()
-        unsanitized_data = json.loads(data.payload)  # needs derserialize before use
-        parsed_data = util.validate(
-            model=UPLOAD_COMPLETE,
-            data=unsanitized_data,
-        )
+        parsed_data = parse_raw_data(data, UPLOAD_COMPLETE)
 
         # the file name is sent back to ack the last archive
         # we can use the archive name in this case to move the file from
@@ -243,14 +229,7 @@ class MeasurementClient(StateMachine):
         logger.info("Waiting for new test from server...")
         conman = self.connection
         data = await conman.receive()
-        if data.payload is None:
-            raise RuntimeError(f"Receiving failed with: {data.status}")
-
-        unsanitized_data = json.loads(data.payload)  # needs derserialize before use
-        parsed_data = util.validate(
-            model=CAPCON,
-            data=unsanitized_data,
-        )
+        parsed_data = parse_raw_data(data, CAPCON)
 
         # in this case we executed all available tests from the server and we can
         # stop all exection. If we already sent the previous test and receive an
@@ -275,7 +254,7 @@ class MeasurementClient(StateMachine):
 
         # next we need to parse the payload
         # is there a case where we do not have any?
-        client_id = self.config.ClientId
+        client_id = self.entity_ID
         active_payloads: list[GenericPayload] = list()
         if parsed_data.payload:
             for payload in parsed_data.payload:
@@ -290,7 +269,7 @@ class MeasurementClient(StateMachine):
             "motra-client",
             current_id=parsed_data.CapConID,
             start_time_delta=parsed_data.duration,
-            runtime_limt="infinity", # disable timeout
+            runtime_limt="infinity",  # disable timeout
             template_unit=True,
         )
 
@@ -302,7 +281,7 @@ class MeasurementClient(StateMachine):
                     "motra-client-mexec",
                     current_id=payload.payload_id,
                     start_time_delta=payload.offset,
-                    runtime_limt=payload.limits, 
+                    runtime_limt=payload.limits,
                     template_unit=True,
                 )
                 self.schedule_units.append(payload_unit)
@@ -329,8 +308,7 @@ class MeasurementClient(StateMachine):
         logger.info("Waiting for execution trigger")
         conman = self.connection
         data = await conman.receive()
-        unsanitized_data = json.loads(data.payload)  # needs derserialize before use
-        parsed_data = util.validate(model=EXECUTE_CAPCON, data=unsanitized_data)
+        parsed_data = parse_raw_data(data, EXECUTE_CAPCON)
 
         if self.current_captureConfiguration != parsed_data.CapConID:
             logger.error("Current and Received test CapConIDs do not match")
@@ -347,3 +325,17 @@ class MeasurementClient(StateMachine):
 
         # launch_and_disown_capture_task()
         logger.info("Client is now offline. State machine has finished.")
+
+
+def parse_raw_data(data: Response, pyd_model: BaseModel):
+
+    if data.status is not Status.SUCCESS:
+        logger.error("Server disconnected.")
+        logger.error(f"{data.payload}")
+        exit(1)
+
+    if data.payload is None:
+        raise RuntimeError(f"Received empty Payload")
+
+    unsanitized_data = json.loads(data.payload)  # needs derserialize before use
+    return util.validate(model=pyd_model, data=unsanitized_data)

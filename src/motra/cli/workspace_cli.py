@@ -1,4 +1,4 @@
-import json, sh, os, tempfile, typer, click, rich
+import json, sh, os, typer, click, rich
 from pathlib import Path
 from rich.json import JSON
 from typing_extensions import Annotated
@@ -14,11 +14,13 @@ from motra.workspace.systemd_unit_generator import (
     motra_client_unit,
     motra_mexec_unit,
     motra_server_unit,
+    parse_systemd_config,
+    reload_systemd,
     write_unit_to_disk,
 )
 from motra.workspace.workspace import (
+    create_entity_workspace,
     get_initialized_default_workspace,
-    init_entity_datastorage,
     init_entity_workspace_dir,
     open_existing_workspace,
 )
@@ -28,7 +30,7 @@ from motra.workspace.workspace_configuration import (
     ServerFileConfiguration,
 )
 
-from motra.workspace.environment import environment_serialized
+from motra.workspace.environment import environment_dump, environment_serialized
 
 
 workspace_cli = typer.Typer(no_args_is_help=True)
@@ -54,25 +56,37 @@ def client(
     entity: Annotated[
         str, typer.Option(prompt="The name of the new Client (Client ID)")
     ] = "client",
+    prefered_workspace: Path = None,
 ):
     """
     Create a workspacesconfiguration for a MOTRA client
     """
-    print("Generating a new CLIENT configuration ...")
+    typer.secho("Generating a new CLIENT configuration ...", fg=typer.colors.GREEN)
 
     # this will get the default or fallback directory for workspaces
-    default_workspace_path, existingconf = init_entity_workspace_dir(None, entity)
+    default_workspace_path, existingconf = init_entity_workspace_dir(
+        prefered_workspace, entity
+    )
     entity_storage = default_workspace_path / entity
-    init_entity_datastorage(entity_storage)
+    create_entity_workspace({entity: entity_storage})
 
-    print(f"Selected workspace: {default_workspace_path}")
+    typer.secho(
+        f"Selected workspace: {default_workspace_path}for {entity}",
+        fg=typer.colors.GREEN,
+    )
 
-    env_setting = {
+    environment_addons = {
         "MOTRA_WORKSPACE": str(default_workspace_path),
         f"MOTRA_{entity.upper()}_WORKSPACE": str(
             default_workspace_path / f"{entity}.config"
         ),
     }
+
+    environment_file = entity_storage / Path(entity + ".env")
+    if environment_file.exists():
+        typer.secho("Found existing configuration.", fg=typer.colors.YELLOW)
+    else:
+        environment_file.touch()
 
     # generate a default config
     clientconfig = ClientFileConfiguration(
@@ -81,71 +95,79 @@ def client(
         retry_time=retry_time,
         retry_limit=retry_limit,
         scheduling_mode=scheduling_mode,
+        live_workspace=entity_storage / "live",
+        staging_workspace=entity_storage / "staging",
+        archive_workspace=entity_storage / "archive",
     )
 
     appconfig = FileConfiguration(
-        config_name=entity,
+        config_name=f"client-{entity}",
         configuration=clientconfig,
-        environment=env_setting,
-        data_storage=entity_storage,
+        environment=environment_addons,
+        environment_file=environment_file,
+        entity_storage_root=entity_storage,
+        entity_id=entity,
     )
 
-    # dump current configuration somewhere
-    print("Generated workspace configuration: ")
+    # dump current configuration to TUI
+    typer.secho("Generated workspace configuration: ", fg=typer.colors.GREEN)
     rich.print(JSON(appconfig.model_dump_json()))
     typer.confirm("Is the current configuration correct?", abort=True)
 
     # find currenty exported workspace (either by env or by fallback/user session)
     if existingconf:
         # we need to warn before overriding later on
-        print(
+        typer.secho(
             f"Checking existing data. Found existing CLIENT workspace"
-            f"in {default_workspace_path}"
+            f"in {default_workspace_path}",
+            fg=typer.colors.YELLOW,
         )
         rich.print(JSON(existingconf.model_dump_json()))
         typer.confirm("Override existing configuration?", abort=True)
 
     # store configuration to disk
-    print("Writing files to disk ")
-    filestream = appconfig.model_dump_json(indent=2)
-    config_path = default_workspace_path / f"{entity}.config"
-    config_path.write_text(filestream)
+    typer.secho("Writing files to disk ", fg=typer.colors.GREEN)
 
-    env_path = default_workspace_path / f"{entity}.env"
-    env_path.write_text(environment_serialized(env_setting))
+    # filestream = appconfig.model_dump_json(indent=2)
+    # config_path = default_workspace_path / f"{entity}.config"
+    # config_path.write_text(filestream)
+
+    # env_path = default_workspace_path / f"{entity}.env"
+    # env_path.write_text(environment_serialized(env_setting))
 
     # setup  systemd templates for the generated confguration
-    python_exec = get_current_python_path() / "python3"
-    command = f"{python_exec} -m motra.cli.cli client"
-    environment_file = env_path
-    working_dir = entity_storage
+    # python_exec = get_current_python_path() / "python3"
+    # command = f"{python_exec} -m motra.cli.cli client"
+    # environment_file = env_path
+    # working_dir = entity_storage
+
+    appconfig.dump(default_workspace_path)
+    appconfig.dumpenv()
+
+    sysd_config = parse_systemd_config(
+        user=os.getuid(),
+        group=os.getgid(),
+        command="-m motra.cli.cli client",
+        environment_file=appconfig.environment_file,
+        entity_datastorage=appconfig.entity_storage_root,
+        live_workdir=appconfig.configuration.live_workspace,
+    )
 
     # create the client template unit
-    client_unit_file = motra_client_unit(
-        os.getuid(),
-        os.getgid(),
-        command,
-        environment_file,
-        working_dir,
-    )
+    client_unit_file = motra_client_unit(sysd_config)
+
     write_unit_to_disk(client_unit_file, "motra-client@.service")
 
     # TODO, this needs to be fixed; storage is not maintained here atm.
-    working_dir = entity_storage / "live"
+    # working_dir = entity_storage / "live"
+    # sysd_config["workdir"] = appconfig.configuration.live_workspace
 
     # create the measurement unit
-    capture_unit_file = motra_mexec_unit(
-        "root",
-        "root",
-        python_exec,
-        environment_file,
-        working_dir,
-    )
+    capture_unit_file = motra_mexec_unit(sysd_config)
     write_unit_to_disk(capture_unit_file, "motra-client-mexec@.service")
 
     # update systemd
-    command = ["systemctl", "daemon-reload"]
-    run_privileged_command(command)
+    reload_systemd()
 
 
 @workspace_cli.command()
@@ -154,94 +176,99 @@ def server(
         str, typer.Option(prompt="Which IP/host should be used for the server: ")
     ] = "0.0.0.0",
     port: Annotated[int, typer.Option(prompt="Set the default port: ")] = 12400,
+    server_workspace_override: Path = None,
 ):
     """
     Create a workspace configuration for a MOTRA server
     """
-    print("Generating a new SERVER configuration ...")
+    typer.secho("Generating a new SERVER configuration ...", fg=typer.colors.GREEN)
 
-    # this will get the default or fallback directory for workspaces
-    default_workspace_path, existingconf = init_entity_workspace_dir(None, "server")
-    entity_storage = default_workspace_path / "server"
-    init_entity_datastorage(entity_storage)
-    print(f"Selected workspace: {default_workspace_path}")
+    # this will get the default workspace directory
+    default_entity = "server"
 
-    env_setting = {
+    default_workspace_path, existingconf = init_entity_workspace_dir(
+        server_workspace_override, default_entity
+    )
+    entity_storage = default_workspace_path / default_entity
+    create_entity_workspace({default_entity: entity_storage})
+    typer.secho(
+        f"Selected workspace: {default_workspace_path} for {default_entity}",
+        fg=typer.colors.GREEN,
+    )
+
+    # set workspace specific additions, we will add these to FileConfiguration
+    # we will change the env_dump to use the FileConfiguration
+    environment_addons = {
         "MOTRA_WORKSPACE": str(default_workspace_path),
-        "MOTRA_SERVER_WORKSPACE": str(default_workspace_path / "server.config"),
+        "MOTRA_SERVER_WORKSPACE_CONFIG": str(
+            default_workspace_path / f"{default_entity}.config"
+        ),
     }
+    environment_file = entity_storage / Path(default_entity + ".env")
+    if environment_file.exists():
+        typer.secho("Found existing configuration.", fg=typer.colors.YELLOW)
+    else:
+        environment_file.touch()
 
     # generate a default config
     serverconfig = ServerFileConfiguration(
         type="server",
         port=port,
         host=host,
-        # test_storage=None,
+        test_storage="local",  # start the per default server in local mode
+        live_workspace=entity_storage / "live",
+        test_workspace=entity_storage / "tests",
+        archive_workspace=entity_storage / "archive",
     )
 
     appconfig = FileConfiguration(
         config_name="server-default",
         configuration=serverconfig,
-        environment=env_setting,
-        data_storage=entity_storage,
+        environment=environment_addons,
+        entity_storage_root=entity_storage,
+        entity_id=default_entity,
+        environment_file=environment_file,
     )
 
     # dump current configuration somewhere
-    print("Generated workspace configuration: ")
+    typer.secho("Generated workspace configuration: ", fg=typer.colors.GREEN)
     rich.print(JSON(appconfig.model_dump_json()))
     typer.confirm("Is the current configuration correct?", abort=True)
 
-    # find currenty exported workspace (either by env or by fallback/user session)
+    # prompt the user, if we need to override the existing configuration or keep the old one
     if existingconf:
-        # we need to warn before overriding later on
-        print(
+        typer.secho(
             f"Checking existing data. Found existing SERVER workspace "
-            f"in {default_workspace_path}"
+            f"in {default_workspace_path}",
+            fg=typer.colors.YELLOW,
         )
         rich.print(JSON(existingconf.model_dump_json()))
         typer.confirm("Override existing configuration?", abort=True)
 
-    # store configuration to disk
-    print("Writing files to disk ")
-    filestream = appconfig.model_dump_json(indent=2)
-    config_path = default_workspace_path / "server.config"
-    config_path.write_text(filestream)
+    typer.secho("Writing files and configuration to disk ", fg=typer.colors.GREEN)
+    appconfig.dump(default_workspace_path)
+    appconfig.dumpenv()
 
-    env_path = default_workspace_path / "server.env"
-    env_path.write_text(environment_serialized(env_setting))
-
-    # setup  systemd templates for the generated confguration
-    user = "root"
-    group = "root"
-    # command = "/home/las3/.cache/pypoetry/virtualenvs/motra-1JdFvEbk-py3.11/bin/python3 -m fastapi run server.py"  # this needs to be changed to motra-exec in the future
-    python_exec = get_current_python_path() / "python3"
-    command = f"{python_exec} -m motra.cli.cli server"
-    environment_file = env_path
-    working_dir = entity_storage
-
-    server_unit_file = motra_server_unit(
-        user,
-        group,
-        command,
-        environment_file,
-        working_dir,
+    sysd_config = parse_systemd_config(
+        user="root",
+        group="root",
+        command="-m motra.cli.cli server",
+        environment_file=appconfig.environment_file,
+        entity_datastorage=appconfig.entity_storage_root,
+        live_workdir=appconfig.configuration.live_workspace,
     )
+
+    # generate files for the server unit
+    server_unit_file = motra_server_unit(sysd_config)
     write_unit_to_disk(server_unit_file, "motra-server.service")
 
-    working_dir = entity_storage / "live"
-
-    mexec_unit_file = motra_mexec_unit(
-        user,
-        group,
-        python_exec,
-        environment_file,
-        working_dir,
-    )
+    # generate files for the server side mexec executor
+    # sysd_config["workdir"] = appconfig.configuration.live_workspace
+    mexec_unit_file = motra_mexec_unit(sysd_config)
     write_unit_to_disk(mexec_unit_file, "motra-server-mexec@.service")
 
-    # update systemd
-    command = ["systemctl", "daemon-reload"]
-    run_privileged_command(command)
+    # update systemd configuration to make changes globally available
+    reload_systemd()
 
 
 @workspace_cli.command()
@@ -268,13 +295,15 @@ def env(
         configuration_files = workspace.glob("*.config")
         files = list(configuration_files)
         fileno = len(files)
-        print(f"Currently available configurations: [{fileno}] ")
+        typer.secho(
+            f"Currently available configurations: [{fileno}] ", fg=typer.colors.GREEN
+        )
 
         for file in files:
             with open(file) as f:
                 rich.print(file)
                 rich.print(JSON.from_data(json.load(f)))
-                print("")
+                typer.secho("")
 
     if all:
         print("Files found: ")
@@ -284,7 +313,7 @@ def env(
                 rich.print(f"> {file}")
 
     if tree:
-        print(sh.tree(f"{workspace}"))
+        typer.secho(sh.tree(f"{workspace}"), fg=typer.colors.GREEN)
 
 
 @workspace_cli.command()
@@ -298,7 +327,7 @@ def clean(
     all: Annotated[
         bool,
         typer.Option(
-            help="Delete runtime configuration and application configruations"
+            help="Delete runtime configuration and application configurations"
         ),
     ] = False,
     archive: Annotated[
@@ -310,9 +339,14 @@ def clean(
     Remove existing workspace configuration
     """
 
+    # TODO scan for entitiy config and load the workspace setup from there
+    # this way file handling will be far simpler
     workspace = get_initialized_default_workspace()
     if workspace is None:
-        print("No workspace found in current environment")
+        typer.secho(
+            "No configured workspace found in current environment",
+            fg=typer.colors.RED,
+        )
         raise typer.Exit()
 
     # remove the entire workspace
@@ -320,28 +354,30 @@ def clean(
         configuration_files = workspace.glob("**/*")
         files = list(configuration_files)
         fileno = len(files)
-        print(f"Files marked for deleting: [{fileno}] ")
+        typer.secho(f"Files marked for deleting: [{fileno}] ", fg=typer.colors.RED)
 
         for file in files:
             if not dry_run:
-                rich.print(f"> deleting {file}")
+                typer.secho(f"> deleting {file}", fg=typer.colors.YELLOW)
                 if file.is_file():
                     os.unlink(file)
             else:
-                rich.print(f"> {file}")
+                typer.secho(f"> {file}", fg=typer.colors.GREEN)
 
     elif archive:
-        configuration_files = workspace.glob("**/*")
+        configuration_files = workspace.glob("**/*.zip")
         files = list(configuration_files)
+        fileno = len(files)
+        typer.secho(f"Files marked for deleting: [{fileno}] ", fg=typer.colors.RED)
 
         for file in files:
             if file.suffix == ".zip":
                 if not dry_run:
-                    rich.print(f"> deleting {file}")
+                    typer.secho(f"> deleting {file}", fg=typer.colors.YELLOW)
                     if file.is_file():
                         os.unlink(file)
                 else:
-                    rich.print(f"> {file}")
+                    typer.secho(f"> {file}", fg=typer.colors.GREEN)
 
     # only remove runtime configuration
     else:
@@ -355,7 +391,7 @@ def clean(
         # get all workspaces and remove the runtime directories
         for entity in entities:
             _, config = open_existing_workspace(entity)
-            marked_files = list(config.data_storage.glob("**/*"))
+            marked_files = list(config.entity_storage_root.glob("**/*"))
             fileno = len(marked_files)
             print(f"Files marked for deleting: [{fileno}] ")
 

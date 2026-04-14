@@ -38,7 +38,7 @@ def server(
     server_defaultConsoleLogger(loglevel)
 
     # try to load the workspace, so we can put our logs there
-    workspace, appconfig = init_entity_workspace_dir(None, "server")
+    workspace, app = init_entity_workspace_dir(None, "server")
     if workspace is None:
         raise ValueError("Could not access workspace. Check logs!")
 
@@ -51,23 +51,12 @@ def server(
     log = logging.getLogger("__name__")
 
     # so we found existing configuration
-    if appconfig:
+    if app:
         log.info(f"Found existing configuration at {workspace}")
 
-    # TODO most of serverconfig can be removed soon, since this has moved into modules
-    serverconfig = appconfig.configuration
-    server_storage = {
-        "tests": appconfig.data_storage / "tests",
-        "live": appconfig.data_storage / "live",
-        "archive": appconfig.data_storage / "archive",
-    }
-
     # we need to update the central configuraiton for FastAPs
-    create_entity_workspace(server_storage)
-    config = MotraServerConfig(
-        serverconfig,
-        server_storage,
-    )
+
+    config = MotraServerConfig(app)
     set_server_config(config)
 
     level = getattr(logging, loglevel.upper())
@@ -75,6 +64,6 @@ def server(
     run(
         reload=reload,
         loglevel=level,
-        port=serverconfig.port,
-        host=serverconfig.host,
+        port=app.configuration.port,
+        host=app.configuration.host,
     )

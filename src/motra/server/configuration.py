@@ -4,7 +4,7 @@ import logging
 from motra.common import util
 from motra.common.response_types import Status
 from motra.common.schedule import COMMAND
-from motra.workspace.workspace_configuration import ServerFileConfiguration
+from motra.workspace.workspace_configuration import FileConfiguration
 
 # this would be the module specific logger
 main_log = logging.getLogger(__name__)
@@ -36,8 +36,7 @@ class MotraServerConfig:
 
     def __init__(
         self,
-        configuration: ServerFileConfiguration,  # TODO: add support for the server relevant stuff, logging has been moved
-        workspace: dict[str, Path] = None,
+        app: FileConfiguration,
     ):
         """
         The internally used configuration for the server process. Configures
@@ -51,23 +50,19 @@ class MotraServerConfig:
         #       lifespan module, since this will be run as a wrapper for the
         #       server process.
 
-        # store a reference to the ServerFileConfiguration
-        server_configuration = configuration
-
         # setup the measurements inside workspace
-        self.live_workspace = workspace["live"]
-        self.archive_workspace = workspace["archive"]
-        self.test_configuration_location = workspace["tests"]
+        self.live_workspace = app.configuration.live_workspace
+        self.archive_workspace = app.configuration.archive_workspace
+        self.test_configuration_location = app.configuration.test_workspace
 
         # setup tests
-        # this might be extended using a external KV store like redis
-        # this is the
+        # this might be extended using a external KV store like redis in the future
         self.test_queue = list()
 
-        # payload state for the current run
+        # payload state for the current measurement iteration
         self.capture_jobs: dict[str, Path] = {}
         self.schedule_units: list[COMMAND] = list()
-        self.last_capcon = str
+        self.last_capcon: str = ""
 
     @property
     def live_data(self):
@@ -88,10 +83,10 @@ class MotraServerConfig:
         if len(self.capture_jobs) == 0:
             return None
         return self.capture_jobs.popitem()
-    
+
     def clear_active_jobslist(self) -> None:
         return self.capture_jobs.clear()
-    
+
     def scan_tests(self) -> list[Path]:
         """
         We collect a set of preconfigured tests to run when the server starts

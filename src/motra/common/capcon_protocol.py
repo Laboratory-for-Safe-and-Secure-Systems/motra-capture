@@ -98,6 +98,7 @@ def serialize(model: BaseModel) -> str:
 #
 # ============================================================================ #
 
+
 class GenericPayload(BaseModel):
     """
     CapCon Payload for different measurement applications.
@@ -109,6 +110,7 @@ class GenericPayload(BaseModel):
     )
     payload_id: str = Field(
         description="Unique ID for the payload to execute",
+        pattern=r"^(cap|log|att|con|oth)(\d{3})-([0-9,a-f,A-F]{8})$",
     )
     target: list[str] = Field(
         description="Discriminator where to run the specified payload."
@@ -149,7 +151,6 @@ class GenericPayload(BaseModel):
     # weeks, week, w
     # months, month, M (defined as 30.44 days)
     # years, year, y (defined as 365.25 days)
-
 
 
 # ============================================================================ #

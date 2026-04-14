@@ -6,10 +6,7 @@ from motra.logging.client_config import (
     client_defaultConsoleLogger,
     client_defaultFileLogger,
 )
-from motra.workspace.workspace import (
-    create_entity_workspace,
-    open_existing_workspace,
-)
+from motra.workspace.workspace import open_existing_workspace
 
 
 client_cli = typer.Typer(no_args_is_help=True)
@@ -33,7 +30,7 @@ def client(
     client_defaultConsoleLogger(loglevel)
     # we check the current environment for an active workspace
     # if we got a valid/explicit workspace dir, we use this as an override
-    path, config = open_existing_workspace(client_id)
+    path, app = open_existing_workspace(client_id)
     if path is None:
         raise ValueError(
             "Could not access workspace. Is the default workspace configured?"
@@ -46,34 +43,25 @@ def client(
     from motra.client.measurement_client import MeasurementClient
     from motra.client.configuration import MotraClientConfig
 
-    clientConfig = config.configuration
-    conf = MotraClientConfig(
-        retry_limit=clientConfig.retry_limit,
-        retry_time=clientConfig.retry_time,
-        workspace_root=config.data_storage,  # logs, data etc need to go into the subfolder
-        ClientId=client_id,
-    )
-
-    # configure settings and storage local to this client
-    connection = ClientConnection(clientConfig.server_uri)
+    # configure runtime settings for this client
+    connection = ClientConnection(app)
     clientWorkspace = {
-        "live": config.data_storage / "live",
-        "staging": config.data_storage / "staging",
-        "archive": config.data_storage / "archive",
+        "live": app.configuration.live_workspace,
+        "staging": app.configuration.staging_workspace,
+        "archive": app.configuration.archive_workspace,
     }
 
-    create_entity_workspace(clientWorkspace)
     client = MeasurementClient(
-        conf,
-        connection,
-        clientWorkspace,
+        entity=app.entity_id,
+        clientConnection=connection,
+        workspace=clientWorkspace,
     )
 
     try:
         # run the default state machine
         client.connect()
     except KeyboardInterrupt:
-        print("\nSession stopped by user...")
+        typer.secho("\nSession stopped by user...", fg=typer.colors.YELLOW)
 
     except RuntimeError as e:
-        print(f"Stopping on error: {e}")
+        typer.secho(f"Stopping on error: {e}", fg=typer.colors.RED)
