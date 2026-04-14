@@ -249,6 +249,14 @@ def server(
     appconfig.dump(default_workspace_path)
     appconfig.dumpenv()
 
+    # update the local workspace paths
+    server_workspace = {
+        "live": serverconfig.live_workspace,
+        "archive": serverconfig.archive_workspace,
+        "tests": serverconfig.test_workspace,
+    }
+    create_entity_workspace(server_workspace)
+
     sysd_config = parse_systemd_config(
         user="root",
         group="root",
