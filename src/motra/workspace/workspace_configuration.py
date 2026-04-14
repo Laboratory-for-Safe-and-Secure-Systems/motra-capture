@@ -28,28 +28,6 @@ class ClientFileConfiguration(BaseModel):
         # config_path = default_workspace_path / "server.config"
         target.write_text(filestream)
 
-    # TODO check if pydantic classes can handle custom function extensions like these
-    def backoff(self) -> int:
-        """
-        Returns the current backoff time for the client upon retry. In case the
-        backofftime is below the backofflimit, the counter is incremented.
-        Once the count reaches the backoff limit, exit will be called.
-        """
-        tick = self.retrytime
-
-        if self.retries < self.retrylimit:
-            self.retrytime += 2
-            self.retries += 1
-        else:
-            # stop the client, if the server fails to respond
-            # also usefull to kill some orphaned clients in case the disown fails
-            typer.secho(
-                "Reached configured retries, stopping the Client", fg=typer.colors.RED
-            )
-            exit(1)
-
-        return tick
-
 
 class ServerFileConfiguration(BaseModel):
     type: Literal["server"]

@@ -27,7 +27,6 @@ def get_default_workspace_path(preferred_path: Path) -> Path:
         Path: The workspace, as found in the default order (raises on error)
     """
     target_workdir = None
-    xdg_runtime_dir = None
     # systemd does not work this way with runtime_dir, since this was an sandboxing option
 
     custom_workspace = os.environ.get("MOTRA_WORKSPACE")
