@@ -407,7 +407,11 @@ def clean(
         # get all workspaces and remove the runtime directories
         for entity in entities:
             _, config = open_existing_workspace(entity)
-            marked_files = list(config.entity_storage_root.glob("**/*"))
+            # python can deduct sets and cast into lists:
+            marked_files = list(
+                set(config.entity_storage_root.glob("**/*"))
+                - set(config.entity_storage_root.glob("**/*.env"))
+            )
             fileno = len(marked_files)
             print(f"Files marked for deleting: [{fileno}] ")
 
