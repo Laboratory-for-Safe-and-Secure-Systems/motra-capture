@@ -198,11 +198,6 @@ async def websocket_endpoint(
         logger.info(
             f"Client disconnected. Details: <{e.code}; {e.reason}> ",
         )
-    # except TypeError as e:
-    #     logger.error(
-    #         "Failed to validate message from Client.. ",
-    #         exc_info=1,
-    #     )
 
 
 def run(
