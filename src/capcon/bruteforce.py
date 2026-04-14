@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 # #############################################################################################
 
 
-capcon_output_folder = Path(".") / "tmp-gen / bruteforce"
+capcon_output_folder = Path(".") / "tmp-gen" / "bruteforce"
 capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
 log.info(capcon_output_folder)
 
@@ -154,6 +154,7 @@ for dyn_payload in dynamic_payloads:
             )
             load.limits = load.limits.format(
                 tcpdump_runtime=str(upper_runtime + 1),  # actual limit
+                end_of_test_logs=str(upper_runtime + 1),
             )
 
         payload = format_payloadIds_with_digest(payload, nextCapConName)
@@ -167,7 +168,7 @@ for dyn_payload in dynamic_payloads:
             description=f"bruteforce for {nextCapConName}",
             timestamp_utc="",
         )
-
+        CAPCON.model_validate(newCon.model_dump())
         capture_configurations.append(newCon)
         id_count += 1
 
@@ -186,6 +187,7 @@ for dyn_payload in dynamic_payloads:
                 description="config reset for docker",
                 timestamp_utc="",
             )
+            CAPCON.model_validate(configCon.model_dump())
             capture_configurations.append(configCon)
 
 

@@ -11,7 +11,7 @@ def genPayload(
     target: list[str] = ["client"],
 ) -> GenericPayload:
 
-    return GenericPayload(
+    return GenericPayload.model_construct(
         payload_type=payload_type,
         payload_id="",
         target=target,

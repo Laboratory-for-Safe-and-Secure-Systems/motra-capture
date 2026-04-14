@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 # #############################################################################################
 
-capcon_output_folder = Path(".") / "tmp-gen / DoS "
+capcon_output_folder = Path(".") / "tmp-gen" / "DoS"
 capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
 log.info(capcon_output_folder)
 
@@ -102,7 +102,7 @@ for dyn_payloads in dynamic_payloads:
             description=f"flooding attack {nextCapConName}",
             timestamp_utc="",
         )
-
+        CAPCON.model_validate(newCon.model_dump())
         capture_configurations.append(newCon)
         id_count += 1
 
@@ -120,6 +120,7 @@ for dyn_payloads in dynamic_payloads:
                 description="config reset for docker",
                 timestamp_utc="",
             )
+            CAPCON.model_validate(configCon.model_dump())
             capture_configurations.append(configCon)
 
 

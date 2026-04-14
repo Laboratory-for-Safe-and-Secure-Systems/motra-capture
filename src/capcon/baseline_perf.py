@@ -105,7 +105,7 @@ for dyn_payload in dynamic_payloads:
             description="baseline measurement",
             timestamp_utc="",
         )
-
+        CAPCON.model_validate(newCon.model_dump())
         capture_configurations.append(newCon)
         id_count += 1
 
@@ -123,6 +123,7 @@ for dyn_payload in dynamic_payloads:
                 description="config reset for docker",
                 timestamp_utc="",
             )
+            CAPCON.model_validate(configCon.model_dump())
             capture_configurations.append(configCon)
 
 

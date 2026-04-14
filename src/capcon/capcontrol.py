@@ -37,7 +37,7 @@ logging.basicConfig(level=logging.INFO, datefmt="%H:%M:%S")
 
 # #############################################################################################
 
-capcon_output_folder = Path(".") / "tmp-gen / c2"
+capcon_output_folder = Path(".") / "tmp-gen" / "c2"
 capcon_output_folder.resolve().mkdir(parents=True, exist_ok=True)
 log.info(capcon_output_folder)
 
@@ -239,7 +239,7 @@ for _ in range(0, repetition):
         description=f"run C2 configurations for testing",
         timestamp_utc="",
     )
-
+    CAPCON.model_validate(newCon.model_dump())
     mitm_configurations.append(newCon)
     id_count += 1
 
@@ -254,6 +254,7 @@ for _ in range(0, repetition):
         description="config reset for docker",
         timestamp_utc="",
     )
+    CAPCON.model_validate(configCon.model_dump())
     mitm_configurations.append(configCon)
 
 
